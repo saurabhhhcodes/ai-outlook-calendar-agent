@@ -70,54 +70,30 @@ def get_access_token(client_id=None, tenant_id=None):
         if result and "access_token" in result:
             return result["access_token"]
     
-    # Handle authentication in Streamlit
+    # Show authentication UI
     try:
         import streamlit as st
         
-        # Check if we already have a device flow in progress
-        if 'auth_flow' not in st.session_state:
-            flow = app.initiate_device_flow(scopes=SCOPE)
-            if "user_code" not in flow:
-                raise Exception("Failed to create device flow")
-            st.session_state.auth_flow = flow
-            st.session_state.auth_app = app
+        # Create fresh device flow each time
+        flow = app.initiate_device_flow(scopes=SCOPE)
+        if "user_code" not in flow:
+            raise Exception("Failed to create device flow")
         
-        flow = st.session_state.auth_flow
+        st.error("🔐 Authentication Required")
+        st.info(f"Go to: **{flow['verification_uri']}**")
+        st.code(flow['user_code'])
+        st.warning("After signing in, wait 30 seconds then try your request again.")
         
-        # Show authentication instructions
-        st.error("🔐 Microsoft Authentication Required")
-        st.markdown("### Follow these steps:")
-        st.markdown(f"**1.** Open this link: [{flow['verification_uri']}]({flow['verification_uri']})")
-        st.code(f"2. Enter this code: {flow['user_code']}")
-        st.markdown("**3.** Sign in with your Microsoft account")
-        st.markdown("**4.** Click the button below to complete authentication")
+        # Try to complete the flow immediately (non-blocking)
+        import time
+        time.sleep(2)  # Give user time to see the code
+        result = app.acquire_token_by_device_flow(flow)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("✅ I've completed authentication", type="primary"):
-                with st.spinner("Checking authentication..."):
-                    result = st.session_state.auth_app.acquire_token_by_device_flow(flow)
-                    if result and "access_token" in result:
-                        _save_cache()
-                        # Clear the flow from session
-                        del st.session_state.auth_flow
-                        del st.session_state.auth_app
-                        st.success("✅ Authentication successful!")
-                        st.rerun()
-                    else:
-                        error = result.get('error_description', 'Authentication not completed') if result else 'Authentication failed'
-                        st.error(f"❌ {error}")
+        if result and "access_token" in result:
+            _save_cache()
+            return result["access_token"]
         
-        with col2:
-            if st.button("🔄 Get new code"):
-                # Clear current flow and get a new one
-                if 'auth_flow' in st.session_state:
-                    del st.session_state.auth_flow
-                if 'auth_app' in st.session_state:
-                    del st.session_state.auth_app
-                st.rerun()
-        
-        raise Exception("Authentication in progress. Please complete the steps above.")
+        raise Exception("Please complete authentication at the URL above, then try again.")
         
     except ImportError:
         # Non-Streamlit environment
