@@ -28,8 +28,12 @@ def _load_cache():
 
 def _save_cache():
     if _token_cache and _token_cache.has_state_changed:
-        with open(TOKEN_CACHE_FILE, "w") as f:
-            f.write(_token_cache.serialize())
+        try:
+            with open(TOKEN_CACHE_FILE, "w") as f:
+                f.write(_token_cache.serialize())
+        except Exception:
+            # Ignore cache save errors in cloud environments
+            pass
 
 def _get_msal_app():
     global _app
@@ -85,20 +89,20 @@ def get_access_token(client_id=None, tenant_id=None):
             
             # Display device code in Streamlit instead of console
             import streamlit as st
-            st.error("Authentication Required!")
-            st.info(f"Go to: {flow['verification_uri']}")
-            st.code(f"Enter code: {flow['user_code']}")
-            st.warning("Please authenticate in a new browser tab, then refresh this page.")
+            st.error("🔐 Authentication Required!")
+            st.info(f"**Step 1:** Go to: {flow['verification_uri']}")
+            st.code(f"Step 2: Enter code: {flow['user_code']}")
+            st.warning("**Step 3:** After authenticating, refresh this page to continue.")
             
-            result = app.acquire_token_by_device_flow(flow)
-            _save_cache()
+            # Don't wait for device flow completion in cloud - let user refresh
+            raise Exception("Please complete authentication and refresh the page.")
         else:
             # Use interactive flow for local development
             result = app.acquire_token_interactive(scopes=SCOPE)
             _save_cache()
     
-    if "access_token" in result:
+    if result and "access_token" in result:
         return result["access_token"]
     else:
-        error_msg = result.get('error_description', result.get('error', 'Unknown error'))
-        raise Exception(f"Could not acquire access token: {error_msg}")
+        error_msg = result.get('error_description', result.get('error', 'Authentication required')) if result else 'Authentication required'
+        raise Exception(f"I am sorry, I cannot fulfill this request. I need to have access to the user's calendar in order to create the event. Please complete authentication first: {error_msg}")
