@@ -29,6 +29,7 @@ with st.sidebar:
     tenant_id = st.text_input("Tenant ID", value=get_credential("TENANT_ID", "common"), help="Your Azure tenant ID")
     client_id = st.text_input("Client ID", value=get_credential("CLIENT_ID"), help="Your Azure app client ID")
     client_secret = st.text_input("Client Secret", value=get_credential("CLIENT_SECRET"), type="password", help="Your Azure app client secret")
+    user_email = st.text_input("User Email", value=get_credential("USER_EMAIL"), help="Your Microsoft account email")
     google_api_key = st.text_input("Google API Key", value=get_credential("GOOGLE_API_KEY"), type="password", help="Your Google AI API key")
     
     # Store credentials in session state
@@ -36,12 +37,14 @@ with st.sidebar:
         st.session_state.tenant_id = tenant_id
         st.session_state.client_id = client_id
         st.session_state.client_secret = client_secret
+        st.session_state.user_email = user_email
         st.session_state.google_api_key = google_api_key
         
         # Set environment variables
         os.environ["TENANT_ID"] = tenant_id
         os.environ["CLIENT_ID"] = client_id
         os.environ["CLIENT_SECRET"] = client_secret
+        os.environ["USER_EMAIL"] = user_email or ""
         os.environ["GOOGLE_API_KEY"] = google_api_key
         
         # Update graph_api_auth module variables directly

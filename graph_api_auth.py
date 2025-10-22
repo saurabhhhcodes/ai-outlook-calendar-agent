@@ -9,6 +9,7 @@ load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TENANT_ID = os.getenv("TENANT_ID", "common")
+USER_EMAIL = os.getenv("USER_EMAIL")
 SCOPE = ["Calendars.ReadWrite", "User.Read"]
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 TOKEN_CACHE_FILE = "token_cache.json"
