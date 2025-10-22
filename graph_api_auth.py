@@ -32,7 +32,6 @@ def _save_cache():
             with open(TOKEN_CACHE_FILE, "w") as f:
                 f.write(_token_cache.serialize())
         except Exception:
-            # Ignore cache save errors in cloud environments
             pass
 
 def _get_msal_app():
@@ -71,42 +70,59 @@ def get_access_token(client_id=None, tenant_id=None):
         if result and "access_token" in result:
             return result["access_token"]
     
-    # If no cached token, show device code flow
+    # Handle authentication in Streamlit
     try:
         import streamlit as st
         
-        # Initialize device flow
-        flow = app.initiate_device_flow(scopes=SCOPE)
-        if "user_code" not in flow:
-            raise Exception("Failed to create device flow")
+        # Check if we already have a device flow in progress
+        if 'auth_flow' not in st.session_state:
+            flow = app.initiate_device_flow(scopes=SCOPE)
+            if "user_code" not in flow:
+                raise Exception("Failed to create device flow")
+            st.session_state.auth_flow = flow
+            st.session_state.auth_app = app
         
-        # Store flow in session state
-        if 'device_flow' not in st.session_state:
-            st.session_state.device_flow = flow
-            st.session_state.msal_app = app
+        flow = st.session_state.auth_flow
         
-        # Show authentication UI
-        st.error("🔐 Authentication Required")
-        st.info(f"1. Go to: **{flow['verification_uri']}**")
-        st.code(f"2. Enter code: {flow['user_code']}")
+        # Show authentication instructions
+        st.error("🔐 Microsoft Authentication Required")
+        st.markdown("### Follow these steps:")
+        st.markdown(f"**1.** Open this link: [{flow['verification_uri']}]({flow['verification_uri']})")
+        st.code(f"2. Enter this code: {flow['user_code']}")
+        st.markdown("**3.** Sign in with your Microsoft account")
+        st.markdown("**4.** Click the button below to complete authentication")
         
-        # Add button to check authentication
-        if st.button("🔄 Check Authentication Status"):
-            result = st.session_state.msal_app.acquire_token_by_device_flow(st.session_state.device_flow)
-            if result and "access_token" in result:
-                _save_cache()
-                st.success("Authentication successful! Please refresh the page.")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ I've completed authentication", type="primary"):
+                with st.spinner("Checking authentication..."):
+                    result = st.session_state.auth_app.acquire_token_by_device_flow(flow)
+                    if result and "access_token" in result:
+                        _save_cache()
+                        # Clear the flow from session
+                        del st.session_state.auth_flow
+                        del st.session_state.auth_app
+                        st.success("✅ Authentication successful!")
+                        st.rerun()
+                    else:
+                        error = result.get('error_description', 'Authentication not completed') if result else 'Authentication failed'
+                        st.error(f"❌ {error}")
+        
+        with col2:
+            if st.button("🔄 Get new code"):
+                # Clear current flow and get a new one
+                if 'auth_flow' in st.session_state:
+                    del st.session_state.auth_flow
+                if 'auth_app' in st.session_state:
+                    del st.session_state.auth_app
                 st.rerun()
-            else:
-                st.error("Authentication not completed yet. Please complete the steps above.")
         
-        raise Exception("Please complete authentication using the steps above")
+        raise Exception("Authentication in progress. Please complete the steps above.")
         
     except ImportError:
-        # Fallback for non-Streamlit environments
+        # Non-Streamlit environment
         result = app.acquire_token_interactive(scopes=SCOPE)
         if result and "access_token" in result:
             _save_cache()
             return result["access_token"]
-        
-    raise Exception("Authentication failed")
+        raise Exception("Authentication failed")

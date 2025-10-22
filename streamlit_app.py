@@ -160,13 +160,24 @@ for message in st.session_state.messages:
 
 # Check authentication status
 if credentials_ready:
-    # Simple check for existing token cache
-    import os
-    token_cache_exists = os.path.exists("token_cache.json")
-    
-    if not token_cache_exists:
-        st.warning("🔐 Authentication Required")
-        st.info("You need to authenticate with Microsoft to access your calendar. Try sending a message to start the authentication process.")
+    try:
+        from graph_api_auth import _load_cache
+        import msal
+        
+        cache = _load_cache()
+        app = msal.PublicClientApplication(
+            client_id=os.environ.get("CLIENT_ID"),
+            authority=f"https://login.microsoftonline.com/{os.environ.get('TENANT_ID', 'common')}",
+            token_cache=cache
+        )
+        accounts = app.get_accounts()
+        
+        if accounts:
+            st.success(f"✅ Authenticated as: {accounts[0].get('username', 'Microsoft User')}")
+        else:
+            st.info("🔐 Not authenticated. Send a message to start authentication.")
+    except:
+        st.info("🔐 Authentication status unknown. Send a message to check.")
 
 # Chat input
 if credentials_ready:
