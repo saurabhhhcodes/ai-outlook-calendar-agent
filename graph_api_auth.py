@@ -45,7 +45,7 @@ def _get_msal_app():
 def get_access_token(client_id=None, tenant_id=None):
     """
     Acquires an access token for the Microsoft Graph API.
-    Uses interactive browser flow for user authentication.
+    Uses device code flow for cloud-friendly authentication.
     """
     # Use provided credentials or fall back to environment variables
     use_client_id = client_id or CLIENT_ID
@@ -64,20 +64,23 @@ def get_access_token(client_id=None, tenant_id=None):
     )
     
     accounts = app.get_accounts()
-    
     result = None
     if accounts:
         result = app.acquire_token_silent(SCOPE, account=accounts[0])
     
     if not result:
+        # Use device code flow instead of interactive flow for cloud compatibility
+        flow = app.initiate_device_flow(scopes=SCOPE)
+        if "user_code" not in flow:
+            raise Exception("Failed to create device flow")
+        
         print("\n" + "="*60)
         print("AUTHENTICATION REQUIRED")
         print("="*60)
-        print("Opening browser for authentication...")
-        print("Please sign in with your Microsoft account.")
+        print(flow["message"])
         print("="*60)
         
-        result = app.acquire_token_interactive(scopes=SCOPE)
+        result = app.acquire_token_by_device_flow(flow)
         _save_cache()
     
     if "access_token" in result:
