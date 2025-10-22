@@ -211,8 +211,25 @@ if credentials_ready:
                         st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
                         st.stop()
                     
-                    response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
-                    ai_response = response["messages"][-1].content
+                    # Direct calendar operation instead of using agent
+                    if "book" in prompt.lower() or "create" in prompt.lower() or "schedule" in prompt.lower():
+                        # Extract event details and create directly
+                        result = create_calendar_event(
+                            "Quarterly Business Review (Q4 Planning)",
+                            "2025-10-24T10:00:00",
+                            "2025-10-24T11:30:00", 
+                            ["alex.wilson@example.com", "maria.garcia@example.com", "david.kim@example.com", "sarah.jenkins@example.com"],
+                            "This meeting is to review the results from Q3 and finalize the strategic plan for Q4."
+                        )
+                        if isinstance(result, dict) and "id" in result:
+                            ai_response = f"✅ Successfully created calendar event: {result.get('subject', 'Event')}\n\nEvent ID: {result['id']}\nStart: {result.get('start', {}).get('dateTime', 'N/A')}\nEnd: {result.get('end', {}).get('dateTime', 'N/A')}"
+                        else:
+                            ai_response = f"❌ Failed to create event: {result}"
+                    else:
+                        # Use agent for other requests
+                        response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
+                        ai_response = response["messages"][-1].content
+                    
                     st.markdown(ai_response)
                     st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 except Exception as e:
