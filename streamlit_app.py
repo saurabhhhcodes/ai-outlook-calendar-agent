@@ -2,12 +2,17 @@ import streamlit as st
 from langgraph.prebuilt import create_react_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
-from calendar_tools import (
-    create_calendar_event,
-    find_event_by_subject,
-    update_calendar_event,
-    delete_calendar_event,
-)
+# Import calendar tools with error handling
+try:
+    from calendar_tools import (
+        create_calendar_event,
+        find_event_by_subject,
+        update_calendar_event,
+        delete_calendar_event,
+    )
+except ImportError as e:
+    st.error(f"Failed to import calendar tools: {e}")
+    st.stop()
 import os
 from dotenv import load_dotenv
 from typing import List, Dict
@@ -146,25 +151,13 @@ for message in st.session_state.messages:
 
 # Check authentication status
 if credentials_ready:
-    # Test authentication without triggering device flow
-    try:
-        from graph_api_auth import get_access_token, _load_cache
-        import msal
-        
-        cache = _load_cache()
-        app = msal.PublicClientApplication(
-            client_id=os.environ.get("CLIENT_ID"),
-            authority=f"https://login.microsoftonline.com/{os.environ.get('TENANT_ID', 'common')}",
-            token_cache=cache
-        )
-        accounts = app.get_accounts()
-        auth_available = len(accounts) > 0
-        
-        if not auth_available:
-            st.warning("🔐 Authentication Required")
-            st.info("You need to authenticate with Microsoft to access your calendar. Try sending a message to start the authentication process.")
-    except:
-        auth_available = False
+    # Simple check for existing token cache
+    import os
+    token_cache_exists = os.path.exists("token_cache.json")
+    
+    if not token_cache_exists:
+        st.warning("🔐 Authentication Required")
+        st.info("You need to authenticate with Microsoft to access your calendar. Try sending a message to start the authentication process.")
 
 # Chat input
 if credentials_ready:
