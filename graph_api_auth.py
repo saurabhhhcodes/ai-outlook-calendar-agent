@@ -69,19 +69,33 @@ def get_access_token(client_id=None, tenant_id=None):
         result = app.acquire_token_silent(SCOPE, account=accounts[0])
     
     if not result:
-        # Use device code flow instead of interactive flow for cloud compatibility
-        flow = app.initiate_device_flow(scopes=SCOPE)
-        if "user_code" not in flow:
-            raise Exception("Failed to create device flow")
+        # Check if we're in a cloud environment (Streamlit Cloud or no display)
+        import sys
+        is_cloud = (
+            'STREAMLIT_SERVER_PORT' in os.environ or 
+            'streamlit.app' in os.environ.get('HOSTNAME', '') or
+            not os.environ.get('DISPLAY')
+        )
         
-        print("\n" + "="*60)
-        print("AUTHENTICATION REQUIRED")
-        print("="*60)
-        print(flow["message"])
-        print("="*60)
-        
-        result = app.acquire_token_by_device_flow(flow)
-        _save_cache()
+        if is_cloud:
+            # Use device code flow for cloud deployment
+            flow = app.initiate_device_flow(scopes=SCOPE)
+            if "user_code" not in flow:
+                raise Exception("Failed to create device flow")
+            
+            # Display device code in Streamlit instead of console
+            import streamlit as st
+            st.error("Authentication Required!")
+            st.info(f"Go to: {flow['verification_uri']}")
+            st.code(f"Enter code: {flow['user_code']}")
+            st.warning("Please authenticate in a new browser tab, then refresh this page.")
+            
+            result = app.acquire_token_by_device_flow(flow)
+            _save_cache()
+        else:
+            # Use interactive flow for local development
+            result = app.acquire_token_interactive(scopes=SCOPE)
+            _save_cache()
     
     if "access_token" in result:
         return result["access_token"]
