@@ -70,14 +70,37 @@ def get_access_token(client_id=None, tenant_id=None):
     # Need authentication
     try:
         import streamlit as st
-        flow = app.initiate_device_flow(scopes=SCOPE)
         
-        st.error("🔐 Authentication Required")
-        st.info(f"1. Go to: {flow['verification_uri']}")
-        st.code(f"2. Enter: {flow['user_code']}")
-        st.warning("3. After signing in, send your message again")
-        
-        raise Exception("Please authenticate and try again")
+        # Check if we have a pending device flow
+        if 'pending_auth' not in st.session_state:
+            flow = app.initiate_device_flow(scopes=SCOPE)
+            st.session_state.pending_auth = {'flow': flow, 'app': app}
+            
+            st.error("🔐 Authentication Required")
+            st.info(f"1. Go to: {flow['verification_uri']}")
+            st.code(f"2. Enter: {flow['user_code']}")
+            st.warning("3. After signing in, send your message again")
+            
+            raise Exception("Please authenticate and try again")
+        else:
+            # Try to complete the pending authentication
+            pending = st.session_state.pending_auth
+            result = pending['app'].acquire_token_by_device_flow(pending['flow'])
+            
+            if result and "access_token" in result:
+                _save_cache()
+                del st.session_state.pending_auth
+                return result["access_token"]
+            else:
+                # Still pending or failed
+                flow = pending['flow']
+                st.error("🔐 Authentication Required")
+                st.info(f"1. Go to: {flow['verification_uri']}")
+                st.code(f"2. Enter: {flow['user_code']}")
+                st.warning("3. After signing in, send your message again")
+                
+                error = result.get('error_description', 'Please complete authentication') if result else 'Please complete authentication'
+                raise Exception(error)
         
     except ImportError:
         result = app.acquire_token_interactive(scopes=SCOPE)
