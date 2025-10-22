@@ -209,7 +209,7 @@ if credentials_ready:
                         get_access_token()  # This will show auth UI if needed
                     except Exception:
                         st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
-                        return
+                        st.stop()
                     
                     response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
                     ai_response = response["messages"][-1].content
