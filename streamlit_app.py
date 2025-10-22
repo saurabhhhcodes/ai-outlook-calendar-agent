@@ -179,6 +179,15 @@ if credentials_ready:
     except:
         st.info("🔐 Authentication status unknown. Send a message to check.")
 
+# Test authentication button
+if credentials_ready and st.button("🔐 Test Authentication"):
+    from graph_api_auth import get_access_token
+    try:
+        token = get_access_token()
+        st.success("Authentication successful!")
+    except Exception as e:
+        st.error(f"Authentication needed: {str(e)}")
+
 # Chat input
 if credentials_ready:
     prompt = st.chat_input("Type your calendar request...")
@@ -197,19 +206,9 @@ if credentials_ready:
                     st.markdown(ai_response)
                     st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 except Exception as e:
-                    error_str = str(e)
-                    if "Please authenticate" in error_str or "Authentication Required" in error_str:
-                        # Show authentication UI directly
-                        from graph_api_auth import get_access_token
-                        try:
-                            get_access_token()
-                        except Exception:
-                            pass  # Authentication UI already shown
-                        st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and send your message again."})
-                    else:
-                        error_msg = f"Error: {error_str}"
-                        st.error(error_msg)
-                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    error_msg = f"Error: {str(e)}"
+                    st.error(error_msg)
+                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 # Sidebar with examples
 with st.sidebar:
