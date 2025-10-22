@@ -144,6 +144,28 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Check authentication status
+if credentials_ready:
+    # Test authentication without triggering device flow
+    try:
+        from graph_api_auth import get_access_token, _load_cache
+        import msal
+        
+        cache = _load_cache()
+        app = msal.PublicClientApplication(
+            client_id=os.environ.get("CLIENT_ID"),
+            authority=f"https://login.microsoftonline.com/{os.environ.get('TENANT_ID', 'common')}",
+            token_cache=cache
+        )
+        accounts = app.get_accounts()
+        auth_available = len(accounts) > 0
+        
+        if not auth_available:
+            st.warning("🔐 Authentication Required")
+            st.info("You need to authenticate with Microsoft to access your calendar. Try sending a message to start the authentication process.")
+    except:
+        auth_available = False
+
 # Chat input
 if credentials_ready:
     prompt = st.chat_input("Type your calendar request...")

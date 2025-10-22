@@ -8,7 +8,11 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
     """
     Creates a new event in the Outlook Calendar.
     """
-    access_token = get_access_token()
+    try:
+        access_token = get_access_token()
+    except Exception as e:
+        return f"Authentication required: {str(e)}"
+    
     headers = {
         'Authorization': 'Bearer ' + access_token,
         'Content-Type': 'application/json'
@@ -37,7 +41,11 @@ def find_event_by_subject(subject, time_window):
     """
     Finds an event by its subject within a given time window.
     """
-    access_token = get_access_token()
+    try:
+        access_token = get_access_token()
+    except Exception as e:
+        return f"Authentication required: {str(e)}"
+    
     headers = {
         'Authorization': 'Bearer ' + access_token,
         'Content-Type': 'application/json'
@@ -62,7 +70,11 @@ def update_calendar_event(event_id, new_start_time, new_end_time):
     """
     Updates an existing event in the Outlook Calendar.
     """
-    access_token = get_access_token()
+    try:
+        access_token = get_access_token()
+    except Exception as e:
+        return f"Authentication required: {str(e)}"
+    
     headers = {
         'Authorization': 'Bearer ' + access_token,
         'Content-Type': 'application/json'
@@ -88,7 +100,11 @@ def delete_calendar_event(event_id):
     """
     Deletes an event from the Outlook Calendar.
     """
-    access_token = get_access_token()
+    try:
+        access_token = get_access_token()
+    except Exception as e:
+        return f"Authentication required: {str(e)}"
+    
     headers = {
         'Authorization': 'Bearer ' + access_token
     }
