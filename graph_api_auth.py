@@ -49,16 +49,13 @@ def _get_msal_app():
 def get_access_token(client_id=None, tenant_id=None):
     """
     Acquires an access token for the Microsoft Graph API.
-    Uses device code flow for cloud-friendly authentication.
     """
-    # Use provided credentials or fall back to environment variables
     use_client_id = client_id or CLIENT_ID
     use_tenant_id = tenant_id or TENANT_ID
     
     if not use_client_id:
-        raise Exception("CLIENT_ID is required. Please set it in environment variables.")
+        raise Exception("CLIENT_ID is required")
     
-    # Create app with provided credentials
     cache = _load_cache()
     authority = f"https://login.microsoftonline.com/{use_tenant_id}"
     app = msal.PublicClientApplication(
@@ -67,42 +64,49 @@ def get_access_token(client_id=None, tenant_id=None):
         token_cache=cache
     )
     
+    # Try silent authentication first
     accounts = app.get_accounts()
-    result = None
     if accounts:
         result = app.acquire_token_silent(SCOPE, account=accounts[0])
+        if result and "access_token" in result:
+            return result["access_token"]
     
-    if not result:
-        # Check if we're in a cloud environment (Streamlit Cloud or no display)
-        import sys
-        is_cloud = (
-            'STREAMLIT_SERVER_PORT' in os.environ or 
-            'streamlit.app' in os.environ.get('HOSTNAME', '') or
-            not os.environ.get('DISPLAY')
-        )
+    # If no cached token, show device code flow
+    try:
+        import streamlit as st
         
-        if is_cloud:
-            # Use device code flow for cloud deployment
-            flow = app.initiate_device_flow(scopes=SCOPE)
-            if "user_code" not in flow:
-                raise Exception("Failed to create device flow")
-            
-            # Display device code in Streamlit instead of console
-            import streamlit as st
-            st.error("🔐 Authentication Required!")
-            st.info(f"**Step 1:** Go to: {flow['verification_uri']}")
-            st.code(f"Step 2: Enter code: {flow['user_code']}")
-            st.warning("**Step 3:** After authenticating, refresh this page to continue.")
-            
-            # Don't wait for device flow completion in cloud - let user refresh
-            raise Exception("Please complete authentication and refresh the page.")
-        else:
-            # Use interactive flow for local development
-            result = app.acquire_token_interactive(scopes=SCOPE)
+        # Initialize device flow
+        flow = app.initiate_device_flow(scopes=SCOPE)
+        if "user_code" not in flow:
+            raise Exception("Failed to create device flow")
+        
+        # Store flow in session state
+        if 'device_flow' not in st.session_state:
+            st.session_state.device_flow = flow
+            st.session_state.msal_app = app
+        
+        # Show authentication UI
+        st.error("🔐 Authentication Required")
+        st.info(f"1. Go to: **{flow['verification_uri']}**")
+        st.code(f"2. Enter code: {flow['user_code']}")
+        
+        # Add button to check authentication
+        if st.button("🔄 Check Authentication Status"):
+            result = st.session_state.msal_app.acquire_token_by_device_flow(st.session_state.device_flow)
+            if result and "access_token" in result:
+                _save_cache()
+                st.success("Authentication successful! Please refresh the page.")
+                st.rerun()
+            else:
+                st.error("Authentication not completed yet. Please complete the steps above.")
+        
+        raise Exception("Please complete authentication using the steps above")
+        
+    except ImportError:
+        # Fallback for non-Streamlit environments
+        result = app.acquire_token_interactive(scopes=SCOPE)
+        if result and "access_token" in result:
             _save_cache()
-    
-    if result and "access_token" in result:
-        return result["access_token"]
-    else:
-        error_msg = result.get('error_description', result.get('error', 'Authentication required')) if result else 'Authentication required'
-        raise Exception(f"I am sorry, I cannot fulfill this request. I need to have access to the user's calendar in order to create the event. Please complete authentication first: {error_msg}")
+            return result["access_token"]
+        
+    raise Exception("Authentication failed")
