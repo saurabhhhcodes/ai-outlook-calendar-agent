@@ -197,9 +197,19 @@ if credentials_ready:
                     st.markdown(ai_response)
                     st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 except Exception as e:
-                    error_msg = f"Error: {str(e)}"
-                    st.error(error_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    error_str = str(e)
+                    if "Please authenticate" in error_str or "Authentication Required" in error_str:
+                        # Show authentication UI directly
+                        from graph_api_auth import get_access_token
+                        try:
+                            get_access_token()
+                        except Exception:
+                            pass  # Authentication UI already shown
+                        st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and send your message again."})
+                    else:
+                        error_msg = f"Error: {error_str}"
+                        st.error(error_msg)
+                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 # Sidebar with examples
 with st.sidebar:
