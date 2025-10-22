@@ -2,16 +2,25 @@ import streamlit as st
 from langgraph.prebuilt import create_react_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
-# Import calendar tools with error handling - v2
+
+# Clear cache to force refresh
+st.cache_data.clear()
+st.cache_resource.clear()
+
+# Import calendar tools with error handling - v3
 try:
+    import sys
+    if 'calendar_tools' in sys.modules:
+        del sys.modules['calendar_tools']
     from calendar_tools import (
         create_calendar_event,
         find_event_by_subject,
         update_calendar_event,
         delete_calendar_event,
     )
-except ImportError as e:
+except Exception as e:
     st.error(f"Failed to import calendar tools: {e}")
+    st.info("Please refresh the page to try again.")
     st.stop()
 import os
 from dotenv import load_dotenv
