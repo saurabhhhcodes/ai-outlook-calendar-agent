@@ -70,33 +70,56 @@ def get_access_token(client_id=None, tenant_id=None):
         if result and "access_token" in result:
             return result["access_token"]
     
-    # Show authentication UI
+    # Authentication required
     try:
         import streamlit as st
         
-        # Create fresh device flow each time
-        flow = app.initiate_device_flow(scopes=SCOPE)
-        if "user_code" not in flow:
-            raise Exception("Failed to create device flow")
+        st.error("🔐 Microsoft Authentication Required")
         
-        st.error("🔐 Authentication Required")
-        st.info(f"Go to: **{flow['verification_uri']}**")
-        st.code(flow['user_code'])
-        st.warning("After signing in, wait 30 seconds then try your request again.")
+        # Check if we have a stored device flow
+        if 'device_flow_data' not in st.session_state:
+            flow = app.initiate_device_flow(scopes=SCOPE)
+            if "user_code" not in flow:
+                raise Exception("Failed to create device flow")
+            st.session_state.device_flow_data = {
+                'flow': flow,
+                'app': app,
+                'created_at': __import__('time').time()
+            }
         
-        # Try to complete the flow immediately (non-blocking)
-        import time
-        time.sleep(2)  # Give user time to see the code
-        result = app.acquire_token_by_device_flow(flow)
+        flow_data = st.session_state.device_flow_data
+        flow = flow_data['flow']
         
-        if result and "access_token" in result:
-            _save_cache()
-            return result["access_token"]
+        # Check if flow is expired (15 minutes)
+        if __import__('time').time() - flow_data['created_at'] > 900:
+            del st.session_state.device_flow_data
+            st.rerun()
         
-        raise Exception("Please complete authentication at the URL above, then try again.")
+        # Show instructions
+        st.markdown(f"**1. Go to:** [{flow['verification_uri']}]({flow['verification_uri']})")
+        st.code(f"2. Enter code: {flow['user_code']}")
+        st.markdown("**3. Sign in with your Microsoft account**")
+        
+        # Check authentication button
+        if st.button("✅ Check Authentication", type="primary"):
+            with st.spinner("Checking..."):
+                result = flow_data['app'].acquire_token_by_device_flow(flow)
+                if result and "access_token" in result:
+                    _save_cache()
+                    del st.session_state.device_flow_data
+                    st.success("Authentication successful!")
+                    st.rerun()
+                else:
+                    error = result.get('error_description', 'Not completed yet') if result else 'Please complete authentication'
+                    st.warning(f"Status: {error}")
+        
+        if st.button("🔄 Get New Code"):
+            del st.session_state.device_flow_data
+            st.rerun()
+        
+        raise Exception("Authentication in progress")
         
     except ImportError:
-        # Non-Streamlit environment
         result = app.acquire_token_interactive(scopes=SCOPE)
         if result and "access_token" in result:
             _save_cache()
