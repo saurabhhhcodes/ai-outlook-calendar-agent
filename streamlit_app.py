@@ -185,6 +185,8 @@ if credentials_ready and st.button("🔐 Test Authentication"):
     try:
         token = get_access_token()
         st.success("Authentication successful!")
+        st.info("Refreshing page to update authentication status...")
+        st.rerun()
     except Exception as e:
         st.error(f"Authentication needed: {str(e)}")
 
@@ -201,6 +203,14 @@ if credentials_ready:
         with st.chat_message("assistant"):
             with st.spinner("Processing..."):
                 try:
+                    # Check authentication before processing
+                    from graph_api_auth import get_access_token
+                    try:
+                        get_access_token()  # This will show auth UI if needed
+                    except Exception:
+                        st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
+                        return
+                    
                     response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
                     ai_response = response["messages"][-1].content
                     st.markdown(ai_response)
