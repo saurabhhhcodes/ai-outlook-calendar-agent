@@ -4,7 +4,7 @@ import json
 
 GRAPH_API_ENDPOINT = 'https://graph.microsoft.com/v1.0'
 
-def create_calendar_event(subject, start_time, end_time, attendees, body):
+def create_calendar_event(subject, start_time, end_time, attendees=None, body=""):
     """
     Creates a new event in the Outlook Calendar.
     """
@@ -18,8 +18,8 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
         "subject": subject,
         "start": {"dateTime": start_time, "timeZone": "UTC"},
         "end": {"dateTime": end_time, "timeZone": "UTC"},
-        "attendees": [{"emailAddress": {"address": attendee}, "type": "required"} for attendee in attendees],
-        "body": {"contentType": "HTML", "content": body}
+        "attendees": [{"emailAddress": {"address": attendee}, "type": "required"} for attendee in (attendees or [])],
+        "body": {"contentType": "HTML", "content": body or ""}
     }
     
     response = requests.post(
@@ -30,7 +30,7 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
     
     if response.status_code == 201:
         event = response.json()
-        return f"✅ Event '{subject}' created successfully from {start_time} to {end_time}."
+        return f"✅ Event '{subject}' created successfully from {start_time} to {end_time}. Event ID: {event['id']}"
     else:
         raise Exception(f"Failed to create event: {response.text}")
 

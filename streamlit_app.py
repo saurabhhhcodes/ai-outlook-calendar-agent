@@ -109,8 +109,8 @@ def initialize_agent():
     llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
     
     @tool
-    def create_event(subject: str, start_time: str, end_time: str, attendees: List[str], body: str):
-        """Creates a calendar event. Parameters: subject (event title), start_time (ISO format like '2025-09-01T14:00:00'), end_time (ISO format), attendees (list of emails), body (description)."""
+    def create_event(subject: str, start_time: str, end_time: str, attendees: List[str] = None, body: str = ""):
+        """Creates a calendar event. Parameters: subject (event title), start_time (ISO format like '2025-09-01T14:00:00'), end_time (ISO format), attendees (optional list of emails), body (optional description)."""
         return create_calendar_event(subject, start_time, end_time, attendees, body)
 
     @tool
