@@ -7,6 +7,10 @@ from langchain_core.tools import tool
 st.cache_data.clear()
 st.cache_resource.clear()
 
+# Force clear agent cache
+if 'agent' in st.session_state:
+    del st.session_state['agent']
+
 # Import calendar tools with error handling - v3
 try:
     import sys
@@ -88,7 +92,6 @@ with st.sidebar:
         st.stop()
 
 # Initialize LLM and tools
-@st.cache_resource
 def initialize_agent():
     # Ensure environment variables are set
     if not os.getenv("GOOGLE_API_KEY"):
@@ -144,7 +147,8 @@ if not credentials_ready:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "agent" not in st.session_state and credentials_ready:
+# Force fresh agent creation every time
+if credentials_ready:
     with st.spinner("Initializing AI agent..."):
         try:
             st.session_state.agent = initialize_agent()
@@ -190,6 +194,36 @@ if credentials_ready and st.button("🔐 Test Authentication"):
     except Exception as e:
         st.error(f"Authentication needed: {str(e)}")
 
+# Test calendar creation button
+if credentials_ready and st.button("📅 Test Calendar Event Creation"):
+    try:
+        from calendar_tools import create_calendar_event
+        result = create_calendar_event(
+            "Birthday Party for Nephew",
+            "2025-09-01T14:00:00",
+            "2025-09-01T16:00:00",
+            ["friend@email.com"],
+            "Birthday celebration for my nephew"
+        )
+        st.success(f"✅ Test event created successfully! Event ID: {result.get('id', 'N/A')}")
+        st.json(result)
+    except Exception as e:
+        st.error(f"❌ Failed to create test event: {str(e)}")
+
+# Direct agent test button
+if credentials_ready and st.button("🤖 Test Agent Directly"):
+    try:
+        if "agent" in st.session_state:
+            test_prompt = "Create a birthday party for my nephew on September 1st, 2025 from 2 PM to 4 PM with friend@email.com"
+            st.write(f"Testing agent with: {test_prompt}")
+            response = st.session_state.agent.invoke({"messages": [("user", test_prompt)]})
+            st.write("Agent response:")
+            st.json(response)
+        else:
+            st.error("Agent not initialized")
+    except Exception as e:
+        st.error(f"Agent test failed: {str(e)}")
+
 # Chat input
 if credentials_ready:
     prompt = st.chat_input("Type your calendar request...")
@@ -207,35 +241,40 @@ if credentials_ready:
                     from graph_api_auth import get_access_token
                     try:
                         get_access_token()  # This will show auth UI if needed
-                    except Exception:
+                    except Exception as auth_error:
+                        auth_msg = f"Authentication required: {str(auth_error)}"
+                        st.error(auth_msg)
                         st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
                         st.stop()
                     
-                    # Direct calendar operation instead of using agent
-                    if "book" in prompt.lower() or "create" in prompt.lower() or "schedule" in prompt.lower():
-                        # Extract event details and create directly
-                        result = create_calendar_event(
-                            "Quarterly Business Review (Q4 Planning)",
-                            "2025-10-24T10:00:00",
-                            "2025-10-24T11:30:00", 
-                            ["alex.wilson@example.com", "maria.garcia@example.com", "david.kim@example.com", "sarah.jenkins@example.com"],
-                            "This meeting is to review the results from Q3 and finalize the strategic plan for Q4."
-                        )
-                        if isinstance(result, dict) and "id" in result:
-                            ai_response = f"✅ Successfully created calendar event: {result.get('subject', 'Event')}\n\nEvent ID: {result['id']}\nStart: {result.get('start', {}).get('dateTime', 'N/A')}\nEnd: {result.get('end', {}).get('dateTime', 'N/A')}"
-                        else:
-                            ai_response = f"❌ Failed to create event: {result}"
-                    else:
-                        # Use agent for other requests
-                        response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
-                        ai_response = response["messages"][-1].content
+                    # Use agent for all requests
+                    if "agent" not in st.session_state:
+                        st.error("Agent not initialized. Please refresh the page.")
+                        st.stop()
+                    
+                    # Debug: Show what we're sending to the agent
+                    st.write(f"Debug: Sending to agent: {prompt}")
+                    
+                    response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
+                    ai_response = response["messages"][-1].content
+                    
+                    # Debug: Show the full response
+                    with st.expander("Debug: Full Agent Response"):
+                        st.json(response)
                     
                     st.markdown(ai_response)
                     st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 except Exception as e:
-                    error_msg = f"Error: {str(e)}"
+                    error_msg = f"Error processing request: {str(e)}"
                     st.error(error_msg)
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    
+                    # Show debug info
+                    with st.expander("Debug Information"):
+                        st.write(f"Error type: {type(e).__name__}")
+                        st.write(f"Error details: {str(e)}")
+                        st.write(f"Agent initialized: {'agent' in st.session_state}")
+                        st.write(f"Credentials ready: {credentials_ready}")
 
 # Sidebar with examples
 with st.sidebar:

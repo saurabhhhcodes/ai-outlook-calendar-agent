@@ -8,6 +8,14 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
     """
     Creates a new event in the Outlook Calendar.
     """
+    # Debug: Print what parameters we received
+    print(f"DEBUG create_calendar_event called with:")
+    print(f"  subject: {subject}")
+    print(f"  start_time: {start_time}")
+    print(f"  end_time: {end_time}")
+    print(f"  attendees: {attendees}")
+    print(f"  body: {body}")
+    
     access_token = get_access_token()
     headers = {
         'Authorization': 'Bearer ' + access_token,
