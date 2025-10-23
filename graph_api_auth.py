@@ -76,6 +76,8 @@ def get_access_token(client_id=None, tenant_id=None):
         # Check if we have a pending device flow
         if 'pending_auth' not in st.session_state:
             flow = app.initiate_device_flow(scopes=SCOPE)
+            if 'device_code' not in flow:
+                raise Exception("Failed to initiate device flow")
             st.session_state.pending_auth = {'flow': flow, 'app': app}
             
             st.error("🔐 Authentication Required")
