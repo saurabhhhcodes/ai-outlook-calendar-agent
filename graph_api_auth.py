@@ -12,25 +12,27 @@ TENANT_ID = os.getenv("TENANT_ID", "common")
 USER_EMAIL = os.getenv("USER_EMAIL")
 SCOPE = ["Calendars.ReadWrite", "User.Read"]
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
-TOKEN_CACHE_FILE = "token_cache.json"
-
 _app = None
-_token_cache = None
+_token_caches = {}
 
-def _load_cache():
-    global _token_cache
-    if _token_cache is None:
-        _token_cache = msal.SerializableTokenCache()
-        if os.path.exists(TOKEN_CACHE_FILE):
-            with open(TOKEN_CACHE_FILE, "r") as f:
-                _token_cache.deserialize(f.read())
-    return _token_cache
+def _get_cache_file(client_id):
+    return f"token_cache_{client_id[:8]}.json"
 
-def _save_cache():
-    if _token_cache and _token_cache.has_state_changed:
+def _load_cache(client_id):
+    if client_id not in _token_caches:
+        _token_caches[client_id] = msal.SerializableTokenCache()
+        cache_file = _get_cache_file(client_id)
+        if os.path.exists(cache_file):
+            with open(cache_file, "r") as f:
+                _token_caches[client_id].deserialize(f.read())
+    return _token_caches[client_id]
+
+def _save_cache(client_id):
+    if client_id in _token_caches and _token_caches[client_id].has_state_changed:
         try:
-            with open(TOKEN_CACHE_FILE, "w") as f:
-                f.write(_token_cache.serialize())
+            cache_file = _get_cache_file(client_id)
+            with open(cache_file, "w") as f:
+                f.write(_token_caches[client_id].serialize())
         except Exception:
             pass
 
@@ -52,7 +54,7 @@ def get_access_token(client_id=None, tenant_id=None):
     if not use_client_id:
         raise Exception("CLIENT_ID is required")
     
-    cache = _load_cache()
+    cache = _load_cache(use_client_id)
     authority = f"https://login.microsoftonline.com/{use_tenant_id}"
     app = msal.PublicClientApplication(
         client_id=use_client_id,
@@ -88,7 +90,7 @@ def get_access_token(client_id=None, tenant_id=None):
             result = pending['app'].acquire_token_by_device_flow(pending['flow'])
             
             if result and "access_token" in result:
-                _save_cache()
+                _save_cache(use_client_id)
                 del st.session_state.pending_auth
                 return result["access_token"]
             else:
@@ -105,6 +107,6 @@ def get_access_token(client_id=None, tenant_id=None):
     except ImportError:
         result = app.acquire_token_interactive(scopes=SCOPE)
         if result and "access_token" in result:
-            _save_cache()
+            _save_cache(use_client_id)
             return result["access_token"]
         raise Exception("Authentication failed")

@@ -168,7 +168,8 @@ if credentials_ready:
         from graph_api_auth import _load_cache
         import msal
         
-        cache = _load_cache()
+        from graph_api_auth import _load_cache
+        cache = _load_cache(os.environ.get("CLIENT_ID"))
         app = msal.PublicClientApplication(
             client_id=os.environ.get("CLIENT_ID"),
             authority=f"https://login.microsoftonline.com/{os.environ.get('TENANT_ID', 'common')}",
@@ -187,7 +188,7 @@ if credentials_ready:
 if credentials_ready and st.button("🔐 Test Authentication"):
     from graph_api_auth import get_access_token
     try:
-        token = get_access_token()
+        token = get_access_token(client_id, tenant_id)
         st.success("Authentication successful!")
         st.info("Refreshing page to update authentication status...")
         st.rerun()
@@ -279,7 +280,7 @@ if credentials_ready:
                     # Check authentication before processing
                     from graph_api_auth import get_access_token
                     try:
-                        get_access_token()  # This will show auth UI if needed
+                        get_access_token(client_id, tenant_id)  # This will show auth UI if needed
                     except Exception as auth_error:
                         auth_msg = f"Authentication required: {str(auth_error)}"
                         st.error(auth_msg)
