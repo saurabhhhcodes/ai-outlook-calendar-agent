@@ -44,14 +44,22 @@ with st.sidebar:
         except:
             return os.getenv(key, default)
     
-    tenant_id = st.text_input("Tenant ID", value="common", help="Your Azure tenant ID (use 'common' for personal accounts)")
-    client_id = st.text_input("Client ID", help="Your Azure app client ID")
-    client_secret = st.text_input("Client Secret", type="password", help="Your Azure app client secret")
-    user_email = st.text_input("User Email", help="The Microsoft account email that will be used for calendar operations")
-    google_api_key = st.text_input("Google API Key", type="password", help="Your Google AI API key")
+    st.info("🎉 **Ready to use!** Just enter your Google API key and email below.")
+    
+    # Pre-filled public app credentials
+    tenant_id = "common"
+    client_id = "c6b880d2-0990-4ee9-a7eb-c3bab3d27110"
+    client_secret = get_credential("CLIENT_SECRET", "your_client_secret_here")
+    
+    st.text_input("Tenant ID", value=tenant_id, disabled=True, help="Pre-configured for all Microsoft accounts")
+    st.text_input("Client ID", value=client_id, disabled=True, help="Shared public app ID")
+    st.text_input("Client Secret", value="••••••••••••••••••••", disabled=True, help="Pre-configured")
+    
+    user_email = st.text_input("Your Microsoft Email", help="Your Outlook/Microsoft account email")
+    google_api_key = st.text_input("Your Google API Key", type="password", help="Get from: https://console.cloud.google.com")
     
     # Store credentials in session state
-    if client_id and client_secret and google_api_key:
+    if google_api_key:
         st.session_state.tenant_id = tenant_id
         st.session_state.client_id = client_id
         st.session_state.client_secret = client_secret
@@ -85,10 +93,13 @@ with st.sidebar:
         credentials_ready = False
     
     if not credentials_ready:
-        st.warning("Please provide all credentials to continue")
-        st.info("Get your credentials from:")
-        st.markdown("- **Azure**: [portal.azure.com](https://portal.azure.com)")
-        st.markdown("- **Google**: [console.cloud.google.com](https://console.cloud.google.com)")
+        st.warning("🔑 Please provide your Google API Key to continue")
+        st.info("**How to get your Google API Key:**")
+        st.markdown("1. Go to [Google Cloud Console](https://console.cloud.google.com)")
+        st.markdown("2. Create a new project or select existing")
+        st.markdown("3. Enable 'Generative Language API'")
+        st.markdown("4. Go to 'Credentials' → 'Create API Key'")
+        st.markdown("5. Copy and paste the key above")
         st.stop()
 
 # Initialize LLM and tools
