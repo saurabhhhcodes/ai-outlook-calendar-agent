@@ -224,57 +224,52 @@ if credentials_ready and st.button("🤖 Test Agent Directly"):
     except Exception as e:
         st.error(f"Agent test failed: {str(e)}")
 
-# Chat input
+# Simple calendar creation form (bypassing AI agent due to quota limits)
 if credentials_ready:
-    prompt = st.chat_input("Type your calendar request...")
-    if prompt:
-        # Add user message
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    st.markdown("### Quick Calendar Event Creation")
+    with st.form("calendar_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            event_title = st.text_input("Event Title", placeholder="Birthday Party for Nephew")
+            event_date = st.date_input("Event Date")
+            start_time = st.time_input("Start Time")
+        with col2:
+            end_time = st.time_input("End Time")
+            attendees = st.text_area("Attendees (one email per line)", placeholder="friend@email.com")
+            event_body = st.text_area("Event Description", placeholder="Birthday celebration")
+        
+        if st.form_submit_button("Create Event"):
+            try:
+                from calendar_tools import create_calendar_event
+                import datetime
+                
+                # Convert to ISO format
+                start_datetime = datetime.datetime.combine(event_date, start_time).isoformat()
+                end_datetime = datetime.datetime.combine(event_date, end_time).isoformat()
+                attendee_list = [email.strip() for email in attendees.split('\n') if email.strip()]
+                
+                result = create_calendar_event(
+                    event_title,
+                    start_datetime,
+                    end_datetime,
+                    attendee_list,
+                    event_body
+                )
+                
+                st.success(f"✅ Event '{event_title}' created successfully!")
+                st.json(result)
+                
+            except Exception as e:
+                st.error(f"❌ Failed to create event: {str(e)}")
 
-        # Get AI response
-        with st.chat_message("assistant"):
-            with st.spinner("Processing..."):
-                try:
-                    # Check authentication before processing
-                    from graph_api_auth import get_access_token
-                    try:
-                        get_access_token()  # This will show auth UI if needed
-                    except Exception as auth_error:
-                        auth_msg = f"Authentication required: {str(auth_error)}"
-                        st.error(auth_msg)
-                        st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
-                        st.stop()
-                    
-                    # Use agent for all requests
-                    if "agent" not in st.session_state:
-                        st.error("Agent not initialized. Please refresh the page.")
-                        st.stop()
-                    
-                    # Debug: Show what we're sending to the agent
-                    st.write(f"Debug: Sending to agent: {prompt}")
-                    
-                    response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
-                    ai_response = response["messages"][-1].content
-                    
-                    # Debug: Show the full response
-                    with st.expander("Debug: Full Agent Response"):
-                        st.json(response)
-                    
-                    st.markdown(ai_response)
-                    st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                except Exception as e:
-                    error_msg = f"Error processing request: {str(e)}"
-                    st.error(error_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
-                    
-                    # Show debug info
-                    with st.expander("Debug Information"):
-                        st.write(f"Error type: {type(e).__name__}")
-                        st.write(f"Error details: {str(e)}")
-                        st.write(f"Agent initialized: {'agent' in st.session_state}")
-                        st.write(f"Credentials ready: {credentials_ready}")
+# Chat input (disabled due to quota limits)
+if credentials_ready:
+    st.markdown("---")
+    st.info("💡 **Note**: AI chat is temporarily disabled due to Google API quota limits. Use the form above to create events directly.")
+    
+    prompt = st.chat_input("Type your calendar request... (Currently disabled due to quota limits)")
+    if prompt:
+        st.warning("AI agent is currently disabled due to API quota limits. Please use the form above to create calendar events.")
 
 # Sidebar with examples
 with st.sidebar:
