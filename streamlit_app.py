@@ -18,6 +18,7 @@ try:
         del sys.modules['calendar_tools']
     from calendar_tools import (
         create_calendar_event,
+        get_all_events,
         find_event_by_subject,
         update_calendar_event,
         delete_calendar_event,
@@ -109,8 +110,13 @@ def initialize_agent():
         return create_calendar_event(subject, start_time, end_time, attendees, body)
 
     @tool
+    def get_events(time_window: Dict[str, str]):
+        """Gets all events within a time window (dict with 'start' and 'end' keys in ISO format). Use this when user asks for all events in a time period."""
+        return get_all_events(time_window)
+
+    @tool
     def find_event(subject: str, time_window: Dict[str, str]):
-        """Finds events by subject within a time window (dict with 'start' and 'end' keys in ISO format)."""
+        """Finds events by subject within a time window (dict with 'start' and 'end' keys in ISO format). Use this when user specifies a subject."""
         return find_event_by_subject(subject, time_window)
 
     @tool
@@ -123,7 +129,7 @@ def initialize_agent():
         """Deletes an event using its event_id."""
         return delete_calendar_event(event_id)
 
-    tools = [create_event, find_event, update_event, delete_event]
+    tools = [create_event, get_events, find_event, update_event, delete_event]
     return create_agent(llm, tools)
 
 # Streamlit UI
@@ -211,8 +217,7 @@ if credentials_ready and st.button("📅 Test Calendar Event Creation"):
             ["friend@email.com"],
             "Birthday celebration for my nephew"
         )
-        st.success(f"✅ Test event created successfully! Event ID: {result.get('id', 'N/A')}")
-        st.json(result)
+        st.success(result)
     except Exception as e:
         st.error(f"❌ Failed to create test event: {str(e)}")
 

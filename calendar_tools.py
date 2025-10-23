@@ -34,6 +34,45 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
     else:
         raise Exception(f"Failed to create event: {response.text}")
 
+def get_all_events(time_window):
+    """
+    Gets all events within a given time window.
+    """
+    access_token = get_access_token()
+    headers = {
+        'Authorization': 'Bearer ' + access_token,
+        'Content-Type': 'application/json'
+    }
+    
+    params = {
+        "$filter": f"start/dateTime ge '{time_window['start']}' and end/dateTime le '{time_window['end']}'",
+        "$orderby": "start/dateTime"
+    }
+    
+    response = requests.get(
+        f"{GRAPH_API_ENDPOINT}/me/events",
+        headers=headers,
+        params=params
+    )
+    
+    if response.status_code == 200:
+        events = response.json().get('value', [])
+        if not events:
+            return "No events found for this time period."
+        
+        result = f"Found {len(events)} event(s):\n\n"
+        for event in events:
+            result += f"📅 {event['subject']}\n"
+            result += f"   Start: {event['start']['dateTime']}\n"
+            result += f"   End: {event['end']['dateTime']}\n"
+            if event.get('attendees'):
+                attendees = [a['emailAddress']['address'] for a in event['attendees']]
+                result += f"   Attendees: {', '.join(attendees)}\n"
+            result += "\n"
+        return result
+    else:
+        raise Exception(f"Failed to get events: {response.text}")
+
 def find_event_by_subject(subject, time_window):
     """
     Finds an event by its subject within a given time window.
