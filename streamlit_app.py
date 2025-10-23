@@ -130,22 +130,7 @@ def initialize_agent():
         return delete_calendar_event(event_id)
 
     tools = [create_event, get_events, find_event, update_event, delete_event]
-    
-    from langchain_core.prompts import ChatPromptTemplate
-    system_prompt = """You are a helpful calendar assistant. Follow these rules:
-
-1. When user asks 'what events do I have today/this week', use get_events tool with appropriate time window
-2. When user wants to delete/update an event, FIRST use find_event to get the event_id, THEN use delete_event/update_event
-3. Always convert dates to ISO format (YYYY-MM-DDTHH:MM:SS)
-4. For 'today', use current date with time 00:00:00 to 23:59:59
-5. Be conversational and helpful in your responses"""
-    
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("placeholder", "{messages}")
-    ])
-    
-    return create_agent(llm, tools, prompt=prompt)
+    return create_agent(llm, tools)
 
 # Streamlit UI
 st.set_page_config(page_title="AI-Powered Outlook Calendar Agent", page_icon="📅")
