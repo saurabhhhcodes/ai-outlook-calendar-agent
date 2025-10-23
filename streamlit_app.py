@@ -44,11 +44,11 @@ with st.sidebar:
         except:
             return os.getenv(key, default)
     
-    tenant_id = st.text_input("Tenant ID", value=get_credential("TENANT_ID", "common"), help="Your Azure tenant ID")
-    client_id = st.text_input("Client ID", value=get_credential("CLIENT_ID"), help="Your Azure app client ID")
-    client_secret = st.text_input("Client Secret", value=get_credential("CLIENT_SECRET"), type="password", help="Your Azure app client secret")
-    user_email = st.text_input("User Email", value=get_credential("USER_EMAIL"), help="Your Microsoft account email")
-    google_api_key = st.text_input("Google API Key", value=get_credential("GOOGLE_API_KEY"), type="password", help="Your Google AI API key")
+    tenant_id = st.text_input("Tenant ID", value="common", help="Your Azure tenant ID (use 'common' for personal accounts)")
+    client_id = st.text_input("Client ID", help="Your Azure app client ID")
+    client_secret = st.text_input("Client Secret", type="password", help="Your Azure app client secret")
+    user_email = st.text_input("User Email", help="Your Microsoft account email (optional)")
+    google_api_key = st.text_input("Google API Key", type="password", help="Your Google AI API key")
     
     # Store credentials in session state
     if client_id and client_secret and google_api_key:
