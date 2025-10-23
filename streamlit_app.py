@@ -1,5 +1,5 @@
 import streamlit as st
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 
@@ -122,7 +122,7 @@ def initialize_agent():
         return delete_calendar_event(event_id)
 
     tools = [create_event, find_event, update_event, delete_event]
-    return create_react_agent(llm, tools)
+    return create_agent(llm, tools)
 
 # Streamlit UI
 st.set_page_config(page_title="AI-Powered Outlook Calendar Agent", page_icon="📅")
@@ -262,14 +262,44 @@ if credentials_ready:
             except Exception as e:
                 st.error(f"❌ Failed to create event: {str(e)}")
 
-# Chat input (disabled due to quota limits)
+# Chat input
 if credentials_ready:
     st.markdown("---")
-    st.info("💡 **Note**: AI chat is temporarily disabled due to Google API quota limits. Use the form above to create events directly.")
-    
-    prompt = st.chat_input("Type your calendar request... (Currently disabled due to quota limits)")
+    prompt = st.chat_input("Type your calendar request...")
     if prompt:
-        st.warning("AI agent is currently disabled due to API quota limits. Please use the form above to create calendar events.")
+        # Add user message
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Get AI response
+        with st.chat_message("assistant"):
+            with st.spinner("Processing..."):
+                try:
+                    # Check authentication before processing
+                    from graph_api_auth import get_access_token
+                    try:
+                        get_access_token()  # This will show auth UI if needed
+                    except Exception as auth_error:
+                        auth_msg = f"Authentication required: {str(auth_error)}"
+                        st.error(auth_msg)
+                        st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
+                        st.stop()
+                    
+                    # Use agent for all requests
+                    if "agent" not in st.session_state:
+                        st.error("Agent not initialized. Please refresh the page.")
+                        st.stop()
+                    
+                    response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
+                    ai_response = response["messages"][-1].content
+                    
+                    st.markdown(ai_response)
+                    st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                except Exception as e:
+                    error_msg = f"Error processing request: {str(e)}"
+                    st.error(error_msg)
+                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 # Sidebar with examples
 with st.sidebar:
