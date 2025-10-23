@@ -22,6 +22,7 @@ try:
         find_event_by_subject,
         update_calendar_event,
         delete_calendar_event,
+        delete_multiple_events,
     )
 except Exception as e:
     st.error(f"Failed to import calendar tools: {e}")
@@ -126,10 +127,15 @@ def initialize_agent():
 
     @tool
     def delete_event(event_id: str):
-        """Deletes an event. First use find_event to get the event_id, then call this. Parameter: event_id (from find_event result)."""
+        """Deletes a single event. Parameter: event_id (from find_event result)."""
         return delete_calendar_event(event_id)
 
-    tools = [create_event, get_events, find_event, update_event, delete_event]
+    @tool
+    def delete_multiple(event_ids_json: str):
+        """Deletes multiple events at once. Parameter: event_ids_json (JSON string array of event IDs from find_event result). Example: '["id1", "id2"]'"""
+        return delete_multiple_events(event_ids_json)
+
+    tools = [create_event, get_events, find_event, update_event, delete_event, delete_multiple]
     return create_agent(llm, tools)
 
 # Streamlit UI
@@ -316,7 +322,9 @@ if credentials_ready:
                         st.error("Agent not initialized. Please refresh the page.")
                         st.stop()
                     
-                    response = st.session_state.agent.invoke({"messages": [("user", prompt)]})
+                    # Build conversation history for context
+                    conversation = [(msg["role"], msg["content"]) for msg in st.session_state.messages]
+                    response = st.session_state.agent.invoke({"messages": conversation})
                     ai_response = response["messages"][-1].content
                     
                     st.markdown(ai_response)

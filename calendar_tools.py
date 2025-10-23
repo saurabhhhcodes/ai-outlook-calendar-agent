@@ -75,7 +75,7 @@ def get_all_events(time_window):
 
 def find_event_by_subject(subject, time_window):
     """
-    Finds an event by its subject within a given time window.
+    Finds an event by its subject within a given time window. Returns event IDs for deletion.
     """
     access_token = get_access_token()
     headers = {
@@ -98,9 +98,11 @@ def find_event_by_subject(subject, time_window):
         if not events:
             return "No events found matching your criteria."
         
-        result = f"Found {len(events)} event(s):\n\n"
+        event_ids = [event['id'] for event in events]
+        result = f"Found {len(events)} event(s). Event IDs: {json.dumps(event_ids)}\n\n"
         for event in events:
             result += f"📅 {event['subject']}\n"
+            result += f"   ID: {event['id']}\n"
             result += f"   Start: {event['start']['dateTime']}\n"
             result += f"   End: {event['end']['dateTime']}\n"
             if event.get('attendees'):
@@ -155,3 +157,28 @@ def delete_calendar_event(event_id):
         return "✅ Event deleted successfully."
     else:
         raise Exception(f"Failed to delete event: {response.text}")
+
+def delete_multiple_events(event_ids_json):
+    """
+    Deletes multiple events from the Outlook Calendar.
+    """
+    event_ids = json.loads(event_ids_json)
+    access_token = get_access_token()
+    headers = {
+        'Authorization': 'Bearer ' + access_token
+    }
+    
+    deleted_count = 0
+    failed_count = 0
+    
+    for event_id in event_ids:
+        response = requests.delete(
+            f"{GRAPH_API_ENDPOINT}/me/events/{event_id}",
+            headers=headers
+        )
+        if response.status_code == 204:
+            deleted_count += 1
+        else:
+            failed_count += 1
+    
+    return f"✅ Deleted {deleted_count} event(s) successfully. Failed: {failed_count}"
