@@ -1,17 +1,25 @@
 # 🤖 AI-Powered Outlook Calendar Agent
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ai-outlook-calendar-agent.streamlit.app)
+
 Transform your calendar management with natural language! This AI agent connects to your Microsoft Outlook calendar and lets you create, find, update, and delete events using simple conversational commands.
 
-## ✨ What It Does
+## ✨ Features
 
-- 📅 **Create Events**: "Book a meeting with John tomorrow at 3 PM with john@company.com"
-- 🔍 **Find Events**: "Show me my meetings this week"
-- ✏️ **Update Events**: "Move the team meeting to 4 PM"
-- ❌ **Delete Events**: "Cancel the client call"
-- 🧠 **Smart Understanding**: Handles dates, times, attendees automatically
-- 👥 **Multi-User Ready**: Works for individuals, teams, and organizations
+- 📅 **Natural Language Calendar Management**: "Create a birthday party for my nephew on September 1st, 2025 from 2 PM to 4 PM with friend@email.com"
+- 🔍 **Smart Event Search**: "Find my meetings this week"
+- ✏️ **Easy Updates**: "Move the team meeting to 4 PM"
+- ❌ **Quick Deletion**: "Cancel the client call"
+- 🧠 **AI-Powered Understanding**: Automatically extracts dates, times, and attendees from natural language
+- 👥 **Multi-User Support**: Each user manages their own calendar securely
+- 🌐 **Cloud Deployed**: Access from anywhere via web browser
+- 🔒 **Secure Authentication**: Microsoft OAuth 2.0 with device code flow
 
-## 🚀 Quick Start (3 Steps)
+## 🚀 Live Demo
+
+**Try it now:** [https://ai-outlook-calendar-agent.streamlit.app](https://ai-outlook-calendar-agent.streamlit.app)
+
+## 💻 Quick Start (Local Setup)
 
 ### Step 1: Install Python Dependencies
 ```bash
