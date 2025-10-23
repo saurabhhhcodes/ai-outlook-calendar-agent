@@ -47,7 +47,7 @@ with st.sidebar:
     tenant_id = st.text_input("Tenant ID", value="common", help="Your Azure tenant ID (use 'common' for personal accounts)")
     client_id = st.text_input("Client ID", help="Your Azure app client ID")
     client_secret = st.text_input("Client Secret", type="password", help="Your Azure app client secret")
-    user_email = st.text_input("User Email", help="Your Microsoft account email (optional)")
+    user_email = st.text_input("User Email", help="The Microsoft account email that will be used for calendar operations")
     google_api_key = st.text_input("Google API Key", type="password", help="Your Google AI API key")
     
     # Store credentials in session state
@@ -169,18 +169,21 @@ if credentials_ready:
         import msal
         
         from graph_api_auth import _load_cache
-        cache = _load_cache(os.environ.get("CLIENT_ID"))
+        cache = _load_cache(client_id)
         app = msal.PublicClientApplication(
-            client_id=os.environ.get("CLIENT_ID"),
-            authority=f"https://login.microsoftonline.com/{os.environ.get('TENANT_ID', 'common')}",
+            client_id=client_id,
+            authority=f"https://login.microsoftonline.com/{tenant_id}",
             token_cache=cache
         )
         accounts = app.get_accounts()
         
         if accounts:
-            st.success(f"✅ Authenticated as: {accounts[0].get('username', 'Microsoft User')}")
+            authenticated_email = accounts[0].get('username', user_email or 'Microsoft User')
+            st.success(f"✅ Authenticated as: {authenticated_email}")
+            if user_email and authenticated_email.lower() != user_email.lower():
+                st.warning(f"⚠️ Note: Authenticated as {authenticated_email}, but configured for {user_email}")
         else:
-            st.info("🔐 Not authenticated. Send a message to start authentication.")
+            st.info(f"🔐 Not authenticated. Will authenticate as: {user_email or 'your Microsoft account'}")
     except:
         st.info("🔐 Authentication status unknown. Send a message to check.")
 
@@ -322,12 +325,12 @@ with st.sidebar:
         st.header("📝 Example Commands")
         
         examples = [
-            "Book a meeting titled 'Quarterly Business Review' tomorrow from 10:00 AM to 11:30 AM with john@company.com and sarah@company.com about Q4 planning discussion",
-            "Schedule a team standup every Monday at 9:00 AM with dev-team@company.com",
-            "Find meetings with 'standup' in the title for this week",
-            "Create a client presentation on Friday 2:00 PM to 4:00 PM with client@example.com about project demo",
-            "Reschedule the team meeting to 2 PM next Tuesday",
-            "Cancel the client presentation meeting"
+            "Create a birthday party for my nephew on September 1st, 2025 from 2 PM to 4 PM with friend@email.com",
+            "Book a team meeting tomorrow at 10 AM with colleague@company.com about project updates",
+            "Schedule a client call on Friday 3 PM to 4 PM with client@example.com",
+            "Find my meetings for this week",
+            "Create a doctor appointment next Monday at 2 PM",
+            "Schedule a family dinner on Sunday at 6 PM with family@email.com"
         ]
         
         for example in examples:
