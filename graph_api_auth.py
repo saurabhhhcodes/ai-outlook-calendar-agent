@@ -75,17 +75,28 @@ def get_access_token(client_id=None, tenant_id=None):
         
         # Check if we have a pending device flow
         if 'pending_auth' not in st.session_state:
-            flow = app.initiate_device_flow(scopes=SCOPE)
-            if 'device_code' not in flow:
-                raise Exception("Failed to initiate device flow")
-            st.session_state.pending_auth = {'flow': flow, 'app': app}
-            
-            st.error("🔐 Authentication Required")
-            st.info(f"1. Go to: {flow['verification_uri']}")
-            st.code(f"2. Enter: {flow['user_code']}")
-            st.warning("3. After signing in, send your message again")
-            
-            raise Exception("Please authenticate and try again")
+            try:
+                flow = app.initiate_device_flow(scopes=SCOPE)
+                if 'device_code' not in flow:
+                    st.error("🔐 Authentication Setup Failed")
+                    st.info("Please check your Azure app configuration:")
+                    st.markdown("- Ensure 'Allow public client flows' is enabled")
+                    st.markdown("- Verify redirect URI includes device code flow")
+                    st.markdown("- Check API permissions are granted")
+                    raise Exception("Device flow not supported. Check Azure app configuration.")
+                    
+                st.session_state.pending_auth = {'flow': flow, 'app': app}
+                
+                st.error("🔐 Authentication Required")
+                st.info(f"1. Go to: {flow['verification_uri']}")
+                st.code(f"2. Enter: {flow['user_code']}")
+                st.warning("3. After signing in, send your message again")
+                
+                raise Exception("Please authenticate and try again")
+            except Exception as e:
+                st.error(f"🔐 Authentication Error: {str(e)}")
+                st.info("Try using the Quick Calendar Event Creation form below instead.")
+                raise Exception("Authentication failed. Use the form to create events.")
         else:
             # Try to complete the pending authentication
             pending = st.session_state.pending_auth
