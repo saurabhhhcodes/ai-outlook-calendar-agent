@@ -23,6 +23,9 @@ try:
         update_calendar_event,
         delete_calendar_event,
         delete_multiple_events,
+        add_attendees_to_event,
+        remove_attendees_from_event,
+        update_event_location,
     )
 except Exception as e:
     st.error(f"Failed to import calendar tools: {e}")
@@ -121,9 +124,24 @@ def initialize_agent():
         return find_event_by_subject(subject, time_window)
 
     @tool
-    def update_event(event_id: str, new_start_time: str, new_end_time: str):
-        """Updates event time. First use find_event to get the event_id, then call this. Parameters: event_id (from find_event), new_start_time (ISO format), new_end_time (ISO format)."""
-        return update_calendar_event(event_id, new_start_time, new_end_time)
+    def update_event(event_id: str, new_start_time: str = None, new_end_time: str = None, new_subject: str = None, new_body: str = None, new_location: str = None):
+        """Updates event details. Parameters: event_id (required), new_start_time (optional ISO format), new_end_time (optional), new_subject (optional), new_body (optional), new_location (optional)."""
+        return update_calendar_event(event_id, new_start_time, new_end_time, new_subject, new_body, new_location)
+
+    @tool
+    def add_attendees(event_id: str, attendee_emails: List[str]):
+        """Adds attendees to an existing event. Parameters: event_id (from find_event), attendee_emails (list of email addresses)."""
+        return add_attendees_to_event(event_id, attendee_emails)
+
+    @tool
+    def remove_attendees(event_id: str, attendee_emails: List[str]):
+        """Removes attendees from an existing event. Parameters: event_id (from find_event), attendee_emails (list of email addresses to remove)."""
+        return remove_attendees_from_event(event_id, attendee_emails)
+
+    @tool
+    def set_location(event_id: str, location: str):
+        """Sets or updates the location of an event. Parameters: event_id (from find_event), location (location name/address)."""
+        return update_event_location(event_id, location)
 
     @tool
     def delete_event(event_id: str):
@@ -135,7 +153,7 @@ def initialize_agent():
         """Deletes multiple events at once. Parameter: event_ids_json (JSON string array of event IDs from find_event result). Example: '["id1", "id2"]'"""
         return delete_multiple_events(event_ids_json)
 
-    tools = [create_event, get_events, find_event, update_event, delete_event, delete_multiple]
+    tools = [create_event, get_events, find_event, update_event, delete_event, delete_multiple, add_attendees, remove_attendees, set_location]
     return create_agent(llm, tools)
 
 # Streamlit UI
