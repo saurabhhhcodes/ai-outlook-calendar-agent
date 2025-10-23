@@ -44,22 +44,16 @@ with st.sidebar:
         except:
             return os.getenv(key, default)
     
-    st.info("🎉 **Ready to use!** Just enter your Google API key and email below.")
+    st.info("🔧 **Setup Required:** Create your own Azure app for calendar access")
     
-    # Pre-filled public app credentials
-    tenant_id = "common"
-    client_id = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"  # Microsoft Graph PowerShell public app
-    client_secret = get_credential("CLIENT_SECRET", "your_client_secret_here")
-    
-    st.text_input("Tenant ID", value=tenant_id, disabled=True, help="Pre-configured for all Microsoft accounts")
-    st.text_input("Client ID", value=client_id, disabled=True, help="Shared public app ID")
-    st.text_input("Client Secret", value="••••••••••••••••••••", disabled=True, help="Pre-configured")
-    
+    tenant_id = st.text_input("Tenant ID", value="common", help="Use 'common' for personal Microsoft accounts")
+    client_id = st.text_input("Client ID", help="Your Azure app client ID")
+    client_secret = st.text_input("Client Secret", type="password", help="Your Azure app client secret")
     user_email = st.text_input("Your Microsoft Email", help="Your Outlook/Microsoft account email")
     google_api_key = st.text_input("Your Google API Key", type="password", help="Get from: https://console.cloud.google.com")
     
     # Store credentials in session state
-    if google_api_key:
+    if client_id and client_secret and google_api_key:
         st.session_state.tenant_id = tenant_id
         st.session_state.client_id = client_id
         st.session_state.client_secret = client_secret
@@ -93,13 +87,10 @@ with st.sidebar:
         credentials_ready = False
     
     if not credentials_ready:
-        st.warning("🔑 Please provide your Google API Key to continue")
-        st.info("**How to get your Google API Key:**")
-        st.markdown("1. Go to [Google Cloud Console](https://console.cloud.google.com)")
-        st.markdown("2. Create a new project or select existing")
-        st.markdown("3. Enable 'Generative Language API'")
-        st.markdown("4. Go to 'Credentials' → 'Create API Key'")
-        st.markdown("5. Copy and paste the key above")
+        st.warning("🔑 Please provide all credentials to continue")
+        st.info("**Setup Instructions:**")
+        st.markdown("**Azure App:** [portal.azure.com](https://portal.azure.com) → App registrations → New registration")
+        st.markdown("**Google API:** [console.cloud.google.com](https://console.cloud.google.com) → Enable Generative Language API")
         st.stop()
 
 # Initialize LLM and tools
@@ -259,15 +250,16 @@ if credentials_ready:
                 from graph_api_auth import get_access_token
                 import datetime
                 
-                # Try to get token with current credentials
-                try:
-                    token = get_access_token(client_id, tenant_id)
-                except:
-                    st.error("🔐 Authentication required for calendar access")
-                    st.info("Please ensure your Azure app has:")
-                    st.markdown("- 'Allow public client flows' enabled")
-                    st.markdown("- Calendars.ReadWrite permission granted")
-                    st.stop()
+                # Simple form-based authentication
+                st.info("🔐 Creating calendar event...")
+                
+                # For now, show instructions for manual setup
+                st.warning("**Manual Setup Required:**")
+                st.markdown("1. Create your own Azure app at [portal.azure.com](https://portal.azure.com)")
+                st.markdown("2. Enable 'Allow public client flows'")
+                st.markdown("3. Add Calendars.ReadWrite permission")
+                st.markdown("4. Use your own Client ID and Secret")
+                st.stop()
                 
                 from calendar_tools import create_calendar_event
                 
