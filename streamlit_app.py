@@ -48,7 +48,7 @@ with st.sidebar:
     
     # Pre-filled public app credentials
     tenant_id = "common"
-    client_id = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"  # New properly configured app
+    client_id = "14d82eec-204b-4c2f-956c-70a8ded3b3e7"  # Third-party multi-tenant app
     client_secret = get_credential("CLIENT_SECRET", "your_client_secret_here")
     
     st.text_input("Tenant ID", value=tenant_id, disabled=True, help="Pre-configured for all Microsoft accounts")
