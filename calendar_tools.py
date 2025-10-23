@@ -8,14 +8,6 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
     """
     Creates a new event in the Outlook Calendar.
     """
-    # Debug: Print what parameters we received
-    print(f"DEBUG create_calendar_event called with:")
-    print(f"  subject: {subject}")
-    print(f"  start_time: {start_time}")
-    print(f"  end_time: {end_time}")
-    print(f"  attendees: {attendees}")
-    print(f"  body: {body}")
-    
     access_token = get_access_token()
     headers = {
         'Authorization': 'Bearer ' + access_token,
@@ -37,7 +29,8 @@ def create_calendar_event(subject, start_time, end_time, attendees, body):
     )
     
     if response.status_code == 201:
-        return response.json()
+        event = response.json()
+        return f"✅ Event '{subject}' created successfully from {start_time} to {end_time}."
     else:
         raise Exception(f"Failed to create event: {response.text}")
 
@@ -62,7 +55,20 @@ def find_event_by_subject(subject, time_window):
     )
     
     if response.status_code == 200:
-        return response.json().get('value', [])
+        events = response.json().get('value', [])
+        if not events:
+            return "No events found matching your criteria."
+        
+        result = f"Found {len(events)} event(s):\n\n"
+        for event in events:
+            result += f"📅 {event['subject']}\n"
+            result += f"   Start: {event['start']['dateTime']}\n"
+            result += f"   End: {event['end']['dateTime']}\n"
+            if event.get('attendees'):
+                attendees = [a['emailAddress']['address'] for a in event['attendees']]
+                result += f"   Attendees: {', '.join(attendees)}\n"
+            result += "\n"
+        return result
     else:
         raise Exception(f"Failed to find event: {response.text}")
 
@@ -88,7 +94,7 @@ def update_calendar_event(event_id, new_start_time, new_end_time):
     )
     
     if response.status_code == 200:
-        return response.json()
+        return f"✅ Event updated successfully. New time: {new_start_time} to {new_end_time}."
     else:
         raise Exception(f"Failed to update event: {response.text}")
 
@@ -107,6 +113,6 @@ def delete_calendar_event(event_id):
     )
     
     if response.status_code == 204:
-        return {"status": "success", "message": "Event deleted successfully."}
+        return "✅ Event deleted successfully."
     else:
         raise Exception(f"Failed to delete event: {response.text}")
