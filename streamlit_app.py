@@ -241,8 +241,21 @@ if credentials_ready:
         
         if st.form_submit_button("Create Event"):
             try:
-                from calendar_tools import create_calendar_event
+                # Direct authentication for form
+                from graph_api_auth import get_access_token
                 import datetime
+                
+                # Try to get token with current credentials
+                try:
+                    token = get_access_token(client_id, tenant_id)
+                except:
+                    st.error("🔐 Authentication required for calendar access")
+                    st.info("Please ensure your Azure app has:")
+                    st.markdown("- 'Allow public client flows' enabled")
+                    st.markdown("- Calendars.ReadWrite permission granted")
+                    st.stop()
+                
+                from calendar_tools import create_calendar_event
                 
                 # Convert to ISO format
                 start_datetime = datetime.datetime.combine(event_date, start_time).isoformat()
