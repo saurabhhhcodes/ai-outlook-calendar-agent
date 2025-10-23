@@ -106,31 +106,46 @@ def initialize_agent():
     
     @tool
     def create_event(subject: str, start_time: str, end_time: str, attendees: List[str], body: str):
-        """Creates a calendar event with subject, start/end times (ISO format), attendees list, and body."""
+        """Creates a calendar event. Parameters: subject (event title), start_time (ISO format like '2025-09-01T14:00:00'), end_time (ISO format), attendees (list of emails), body (description)."""
         return create_calendar_event(subject, start_time, end_time, attendees, body)
 
     @tool
     def get_events(time_window: Dict[str, str]):
-        """Gets all events within a time window (dict with 'start' and 'end' keys in ISO format). Use this when user asks for all events in a time period."""
+        """Gets ALL events in a time period. Use when user asks 'what events do I have today/this week/etc'. Parameter: time_window dict with 'start' and 'end' in ISO format. Example: {'start': '2025-01-23T00:00:00', 'end': '2025-01-23T23:59:59'}"""
         return get_all_events(time_window)
 
     @tool
     def find_event(subject: str, time_window: Dict[str, str]):
-        """Finds events by subject within a time window (dict with 'start' and 'end' keys in ISO format). Use this when user specifies a subject."""
+        """Finds events by subject/title. Use when user mentions a specific event name. Parameters: subject (event title to search), time_window (dict with 'start' and 'end' in ISO format)."""
         return find_event_by_subject(subject, time_window)
 
     @tool
     def update_event(event_id: str, new_start_time: str, new_end_time: str):
-        """Updates an event's start and end times (ISO format) using its event_id."""
+        """Updates event time. First use find_event to get the event_id, then call this. Parameters: event_id (from find_event), new_start_time (ISO format), new_end_time (ISO format)."""
         return update_calendar_event(event_id, new_start_time, new_end_time)
 
     @tool
     def delete_event(event_id: str):
-        """Deletes an event using its event_id."""
+        """Deletes an event. First use find_event to get the event_id, then call this. Parameter: event_id (from find_event result)."""
         return delete_calendar_event(event_id)
 
     tools = [create_event, get_events, find_event, update_event, delete_event]
-    return create_agent(llm, tools)
+    
+    from langchain_core.prompts import ChatPromptTemplate
+    system_prompt = """You are a helpful calendar assistant. Follow these rules:
+
+1. When user asks 'what events do I have today/this week', use get_events tool with appropriate time window
+2. When user wants to delete/update an event, FIRST use find_event to get the event_id, THEN use delete_event/update_event
+3. Always convert dates to ISO format (YYYY-MM-DDTHH:MM:SS)
+4. For 'today', use current date with time 00:00:00 to 23:59:59
+5. Be conversational and helpful in your responses"""
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("placeholder", "{messages}")
+    ])
+    
+    return create_agent(llm, tools, prompt=prompt)
 
 # Streamlit UI
 st.set_page_config(page_title="AI-Powered Outlook Calendar Agent", page_icon="📅")
