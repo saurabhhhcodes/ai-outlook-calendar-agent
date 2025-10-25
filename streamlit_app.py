@@ -193,13 +193,26 @@ if credentials_ready:
         
         if accounts:
             authenticated_email = accounts[0].get('username', 'Microsoft User')
-            st.success(f"✅ Signed in as: **{authenticated_email}**")
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.success(f"✅ Signed in as: **{authenticated_email}**")
+            with col2:
+                if st.button("🚪 Logout", type="secondary"):
+                    from graph_api_auth import logout
+                    logout(os.environ["CLIENT_ID"])
+                    if 'messages' in st.session_state:
+                        st.session_state.messages = []
+                    if 'agent' in st.session_state:
+                        del st.session_state.agent
+                    st.success("Logged out successfully!")
+                    st.rerun()
             authenticated = True
         else:
             st.info("🔐 **Sign in with your Microsoft account to get started**")
+            st.markdown("Each user signs in with their own account - your calendar stays private!")
             if st.button("🔑 Sign In with Microsoft", type="primary"):
                 try:
-                    get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"])
+                    get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"], force_new_login=True)
                     st.rerun()
                 except Exception as e:
                     st.error(f"Authentication error: {str(e)}")

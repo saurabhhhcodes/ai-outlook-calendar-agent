@@ -47,7 +47,7 @@ def _get_msal_app():
         )
     return _app
 
-def get_access_token(client_id=None, tenant_id=None):
+def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
     use_client_id = client_id or CLIENT_ID
     use_tenant_id = tenant_id or TENANT_ID
     
@@ -62,12 +62,13 @@ def get_access_token(client_id=None, tenant_id=None):
         token_cache=cache
     )
     
-    # Try silent authentication
-    accounts = app.get_accounts()
-    if accounts:
-        result = app.acquire_token_silent(SCOPE, account=accounts[0])
-        if result and "access_token" in result:
-            return result["access_token"]
+    # Try silent authentication (skip if force_new_login)
+    if not force_new_login:
+        accounts = app.get_accounts()
+        if accounts:
+            result = app.acquire_token_silent(SCOPE, account=accounts[0])
+            if result and "access_token" in result:
+                return result["access_token"]
     
     # Need authentication
     try:
@@ -85,12 +86,13 @@ def get_access_token(client_id=None, tenant_id=None):
                     st.markdown("- Check API permissions are granted")
                     raise Exception("Device flow not supported. Check Azure app configuration.")
                     
-                st.session_state.pending_auth = {'flow': flow, 'app': app}
+                st.session_state.pending_auth = {'flow': flow, 'app': app, 'client_id': use_client_id}
                 
                 st.error("🔐 Authentication Required")
                 st.info(f"1. Go to: {flow['verification_uri']}")
                 st.code(f"2. Enter: {flow['user_code']}")
-                st.warning("3. After signing in, send your message again")
+                st.warning("3. Sign in with YOUR Microsoft account")
+                st.warning("4. After signing in, send your message again")
                 
                 raise Exception("Please authenticate and try again")
             except Exception as e:
@@ -103,7 +105,7 @@ def get_access_token(client_id=None, tenant_id=None):
             result = pending['app'].acquire_token_by_device_flow(pending['flow'])
             
             if result and "access_token" in result:
-                _save_cache(use_client_id)
+                _save_cache(pending.get('client_id', use_client_id))
                 del st.session_state.pending_auth
                 return result["access_token"]
             else:
@@ -123,3 +125,18 @@ def get_access_token(client_id=None, tenant_id=None):
             _save_cache(use_client_id)
             return result["access_token"]
         raise Exception("Authentication failed")
+
+def logout(client_id=None):
+    """Clears the token cache to log out the user."""
+    use_client_id = client_id or CLIENT_ID
+    cache_file = _get_cache_file(use_client_id)
+    
+    # Clear in-memory cache
+    if use_client_id in _token_caches:
+        del _token_caches[use_client_id]
+    
+    # Delete cache file
+    if os.path.exists(cache_file):
+        os.remove(cache_file)
+    
+    return True
