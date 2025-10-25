@@ -2,14 +2,24 @@ import streamlit as st
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
+import os
+from typing import List, Dict
 
-# Clear cache to force refresh
-st.cache_data.clear()
-st.cache_resource.clear()
+# Check if running in demo mode (credentials in secrets)
+try:
+    demo_mode = bool(st.secrets.get("CLIENT_ID")) and bool(st.secrets.get("GOOGLE_API_KEY"))
+except:
+    demo_mode = False
 
-# Force clear agent cache
-if 'agent' in st.session_state:
-    del st.session_state['agent']
+if demo_mode:
+    # Pre-configured demo mode
+    os.environ["TENANT_ID"] = "common"
+    os.environ["CLIENT_ID"] = st.secrets["CLIENT_ID"]
+    os.environ["CLIENT_SECRET"] = st.secrets.get("CLIENT_SECRET", "")
+    os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+    credentials_ready = True
+else:
+    credentials_ready = False
 
 # Import calendar tools with error handling - v3
 try:
@@ -37,66 +47,36 @@ from typing import List, Dict
 
 load_dotenv()
 
-# Configuration in sidebar
-with st.sidebar:
-    st.header("🔧 Configuration")
-    
-    # Get credentials from user input, Streamlit secrets, or environment
-    def get_credential(key, default=""):
-        # Try Streamlit secrets first (for cloud deployment)
-        try:
-            return st.secrets.get(key, os.getenv(key, default))
-        except:
-            return os.getenv(key, default)
-    
-    st.info("🔧 **Setup Required:** Create your own Azure app for calendar access")
-    
-    tenant_id = st.text_input("Tenant ID", value="common", help="Use 'common' for personal Microsoft accounts")
-    client_id = st.text_input("Client ID", help="Your Azure app client ID")
-    client_secret = st.text_input("Client Secret", type="password", help="Your Azure app client secret")
-    user_email = st.text_input("Your Microsoft Email", help="Your Outlook/Microsoft account email")
-    google_api_key = st.text_input("Your Google API Key", type="password", help="Get from: https://console.cloud.google.com")
-    
-    # Store credentials in session state
-    if client_id and client_secret and google_api_key:
-        st.session_state.tenant_id = tenant_id
-        st.session_state.client_id = client_id
-        st.session_state.client_secret = client_secret
-        st.session_state.user_email = user_email
-        st.session_state.google_api_key = google_api_key
+# Configuration (only show if not in demo mode)
+if not demo_mode:
+    with st.sidebar:
+        st.header("🔧 Configuration")
+        st.info("🔧 **Setup Required:** Create your own Azure app for calendar access")
         
-        # Set environment variables
-        os.environ["TENANT_ID"] = tenant_id
-        os.environ["CLIENT_ID"] = client_id
-        os.environ["CLIENT_SECRET"] = client_secret
-        os.environ["USER_EMAIL"] = user_email or ""
-        os.environ["GOOGLE_API_KEY"] = google_api_key
+        tenant_id = st.text_input("Tenant ID", value="common", help="Use 'common' for personal Microsoft accounts")
+        client_id = st.text_input("Client ID", help="Your Azure app client ID")
+        client_secret = st.text_input("Client Secret", type="password", help="Your Azure app client secret")
+        user_email = st.text_input("Your Microsoft Email", help="Your Outlook/Microsoft account email")
+        google_api_key = st.text_input("Your Google API Key", type="password", help="Get from: https://console.cloud.google.com")
         
-        # Update graph_api_auth module variables directly
-        import graph_api_auth
-        graph_api_auth.CLIENT_ID = client_id
-        graph_api_auth.TENANT_ID = tenant_id
-        graph_api_auth.AUTHORITY = f"https://login.microsoftonline.com/{tenant_id}"
-        if hasattr(graph_api_auth, 'CLIENT_SECRET'):
-            graph_api_auth.CLIENT_SECRET = client_secret
-        
-        credentials_ready = True
-        
-        # Add button to reinitialize agent
-        if st.button("🔄 Reinitialize Agent"):
-            # Clear cached agent
-            if "agent" in st.session_state:
-                del st.session_state.agent
-            st.rerun()
-    else:
-        credentials_ready = False
-    
-    if not credentials_ready:
-        st.warning("🔑 Please provide all credentials to continue")
-        st.info("**Setup Instructions:**")
-        st.markdown("**Azure App:** [portal.azure.com](https://portal.azure.com) → App registrations → New registration")
-        st.markdown("**Google API:** [console.cloud.google.com](https://console.cloud.google.com) → Enable Generative Language API")
-        st.stop()
+        if client_id and client_secret and google_api_key:
+            os.environ["TENANT_ID"] = tenant_id
+            os.environ["CLIENT_ID"] = client_id
+            os.environ["CLIENT_SECRET"] = client_secret
+            os.environ["USER_EMAIL"] = user_email or ""
+            os.environ["GOOGLE_API_KEY"] = google_api_key
+            credentials_ready = True
+        else:
+            credentials_ready = False
+            st.warning("🔑 Please provide all credentials to continue")
+            st.stop()
+
+# Update graph_api_auth module
+if credentials_ready:
+    import graph_api_auth
+    graph_api_auth.CLIENT_ID = os.environ["CLIENT_ID"]
+    graph_api_auth.TENANT_ID = os.environ["TENANT_ID"]
+    graph_api_auth.AUTHORITY = f"https://login.microsoftonline.com/{os.environ['TENANT_ID']}"
 
 # Initialize LLM and tools
 def initialize_agent():
@@ -157,10 +137,13 @@ def initialize_agent():
     return create_agent(llm, tools)
 
 # Streamlit UI
-st.set_page_config(page_title="AI-Powered Outlook Calendar Agent", page_icon="📅")
+st.set_page_config(page_title="AI Calendar Agent" + (" - Demo" if demo_mode else ""), page_icon="📅", layout="wide")
 
 st.title("📅 AI-Powered Outlook Calendar Agent")
-st.markdown("Manage your Microsoft Outlook Calendar using natural language commands!")
+if demo_mode:
+    st.markdown("**Demo Version** - Manage your Microsoft Outlook Calendar with natural language!")
+else:
+    st.markdown("Manage your Microsoft Outlook Calendar using natural language commands!")
 
 if not credentials_ready:
     st.info("👈 Please configure your credentials in the sidebar to get started")
@@ -197,119 +180,47 @@ for message in st.session_state.messages:
 # Check authentication status
 if credentials_ready:
     try:
-        from graph_api_auth import _load_cache
+        from graph_api_auth import _load_cache, get_access_token
         import msal
         
-        from graph_api_auth import _load_cache
-        cache = _load_cache(client_id)
+        cache = _load_cache(os.environ["CLIENT_ID"])
         app = msal.PublicClientApplication(
-            client_id=client_id,
-            authority=f"https://login.microsoftonline.com/{tenant_id}",
+            client_id=os.environ["CLIENT_ID"],
+            authority=f"https://login.microsoftonline.com/{os.environ['TENANT_ID']}",
             token_cache=cache
         )
         accounts = app.get_accounts()
         
         if accounts:
-            authenticated_email = accounts[0].get('username', user_email or 'Microsoft User')
-            st.success(f"✅ Authenticated as: {authenticated_email}")
-            if user_email and authenticated_email.lower() != user_email.lower():
-                st.warning(f"⚠️ Note: Authenticated as {authenticated_email}, but configured for {user_email}")
+            authenticated_email = accounts[0].get('username', 'Microsoft User')
+            st.success(f"✅ Signed in as: **{authenticated_email}**")
+            authenticated = True
         else:
-            st.info(f"🔐 Not authenticated. Will authenticate as: {user_email or 'your Microsoft account'}")
-    except:
-        st.info("🔐 Authentication status unknown. Send a message to check.")
-
-# Test authentication button
-if credentials_ready and st.button("🔐 Test Authentication"):
-    from graph_api_auth import get_access_token
-    try:
-        token = get_access_token(client_id, tenant_id)
-        st.success("Authentication successful!")
-        st.info("Refreshing page to update authentication status...")
-        st.rerun()
+            st.info("🔐 **Sign in with your Microsoft account to get started**")
+            if st.button("🔑 Sign In with Microsoft", type="primary"):
+                try:
+                    get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"])
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Authentication error: {str(e)}")
+            authenticated = False
+            st.stop()
     except Exception as e:
-        st.error(f"Authentication needed: {str(e)}")
+        st.error(f"Setup error: {str(e)}")
+        st.stop()
 
-# Test calendar creation button
-if credentials_ready and st.button("📅 Test Calendar Event Creation"):
-    try:
-        from calendar_tools import create_calendar_event
-        result = create_calendar_event(
-            "Birthday Party for Nephew",
-            "2025-09-01T14:00:00",
-            "2025-09-01T16:00:00",
-            ["friend@email.com"],
-            "Birthday celebration for my nephew"
-        )
-        st.success(result)
-    except Exception as e:
-        st.error(f"❌ Failed to create test event: {str(e)}")
-
-# Direct agent test button
-if credentials_ready and st.button("🤖 Test Agent Directly"):
-    try:
-        if "agent" in st.session_state:
-            test_prompt = "Create a birthday party for my nephew on September 1st, 2025 from 2 PM to 4 PM with friend@email.com"
-            st.write(f"Testing agent with: {test_prompt}")
-            response = st.session_state.agent.invoke({"messages": [("user", test_prompt)]})
-            st.write("Agent response:")
-            st.json(response)
-        else:
-            st.error("Agent not initialized")
-    except Exception as e:
-        st.error(f"Agent test failed: {str(e)}")
-
-# Simple calendar creation form (bypassing AI agent due to quota limits)
-if credentials_ready:
-    st.markdown("### Quick Calendar Event Creation")
-    with st.form("calendar_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            event_title = st.text_input("Event Title", placeholder="Birthday Party for Nephew")
-            event_date = st.date_input("Event Date")
-            start_time = st.time_input("Start Time")
-        with col2:
-            end_time = st.time_input("End Time")
-            attendees = st.text_area("Attendees (one email per line)", placeholder="friend@email.com")
-            event_body = st.text_area("Event Description", placeholder="Birthday celebration")
-        
-        if st.form_submit_button("Create Event"):
+# Hide test buttons in demo mode
+if not demo_mode and credentials_ready:
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔐 Test Authentication"):
+            from graph_api_auth import get_access_token
             try:
-                # Direct authentication for form
-                from graph_api_auth import get_access_token
-                import datetime
-                
-                # Simple form-based authentication
-                st.info("🔐 Creating calendar event...")
-                
-                # For now, show instructions for manual setup
-                st.warning("**Manual Setup Required:**")
-                st.markdown("1. Create your own Azure app at [portal.azure.com](https://portal.azure.com)")
-                st.markdown("2. Enable 'Allow public client flows'")
-                st.markdown("3. Add Calendars.ReadWrite permission")
-                st.markdown("4. Use your own Client ID and Secret")
-                st.stop()
-                
-                from calendar_tools import create_calendar_event
-                
-                # Convert to ISO format
-                start_datetime = datetime.datetime.combine(event_date, start_time).isoformat()
-                end_datetime = datetime.datetime.combine(event_date, end_time).isoformat()
-                attendee_list = [email.strip() for email in attendees.split('\n') if email.strip()]
-                
-                result = create_calendar_event(
-                    event_title,
-                    start_datetime,
-                    end_datetime,
-                    attendee_list,
-                    event_body
-                )
-                
-                st.success(f"✅ Event '{event_title}' created successfully!")
-                st.json(result)
-                
+                get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"])
+                st.success("Authentication successful!")
+                st.rerun()
             except Exception as e:
-                st.error(f"❌ Failed to create event: {str(e)}")
+                st.error(f"Authentication error: {str(e)}")
 
 # Chat input
 if credentials_ready:
@@ -328,11 +239,10 @@ if credentials_ready:
                     # Check authentication before processing
                     from graph_api_auth import get_access_token
                     try:
-                        get_access_token(client_id, tenant_id)  # This will show auth UI if needed
+                        get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"])
                     except Exception as auth_error:
-                        auth_msg = f"Authentication required: {str(auth_error)}"
-                        st.error(auth_msg)
-                        st.session_state.messages.append({"role": "assistant", "content": "Please complete authentication above and try again."})
+                        st.error(f"Authentication required: {str(auth_error)}")
+                        st.session_state.messages.append({"role": "assistant", "content": "Please sign in above and try again."})
                         st.stop()
                     
                     # Use agent for all requests
@@ -355,24 +265,28 @@ if credentials_ready:
 # Sidebar with examples
 with st.sidebar:
     if credentials_ready:
-        st.markdown("---")
-        st.header("📝 Example Commands")
+        st.header("💡 Example Commands")
         
         examples = [
-            "Create a birthday party for my nephew on September 1st, 2025 from 2 PM to 4 PM with friend@email.com",
-            "Book a team meeting tomorrow at 10 AM with colleague@company.com about project updates",
-            "Schedule a client call on Friday 3 PM to 4 PM with client@example.com",
-            "Find my meetings for this week",
-            "Create a doctor appointment next Monday at 2 PM",
-            "Schedule a family dinner on Sunday at 6 PM with family@email.com"
+            "What events do I have today?",
+            "Create a team meeting tomorrow at 2 PM",
+            "Add john@email.com to the team meeting",
+            "Remove sarah@email.com from the standup",
+            "Find all meetings this week",
+            "Delete the client call",
+            "Change meeting location to Room 301"
         ]
         
         for example in examples:
-            if st.button(example, key=example):
+            if st.button(example, key=example, use_container_width=True):
                 st.session_state.messages.append({"role": "user", "content": example})
                 st.rerun()
         
         st.markdown("---")
-        if st.button("Clear Chat"):
+        if st.button("🗑️ Clear Chat", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
+        
+        st.markdown("---")
+        st.markdown("### 🔒 Privacy")
+        st.caption("Your calendar data is accessed securely via Microsoft OAuth. No data is stored.")
