@@ -90,6 +90,7 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                 st.session_state.pending_auth = {'flow': flow, 'app': app, 'client_id': use_client_id, 'last_attempt': time.time()}
                 
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
+                device_code = flow['user_code']
                 
                 st.markdown(f"""
                 <div style='text-align: center; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; margin: 20px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.2);'>
@@ -106,6 +107,14 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                     <p style='color: rgba(255,255,255,0.8); margin-top: 20px; font-size: 14px;'>🔒 Secure OAuth 2.0 Authentication</p>
                 </div>
                 <script>
+                    // Auto-copy device code to clipboard
+                    navigator.clipboard.writeText('{device_code}').then(function() {{
+                        console.log('Device code copied to clipboard');
+                    }}).catch(function(err) {{
+                        console.log('Could not copy device code:', err);
+                    }});
+                    
+                    // Auto-refresh
                     setTimeout(function() {{
                         window.location.reload();
                     }}, 10000);
@@ -143,6 +152,7 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                 # Still pending or failed
                 flow = pending['flow']
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
+                device_code = flow['user_code']
                 
                 st.markdown(f"""
                 <div style='text-align: center; padding: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; margin: 20px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.2);'>
@@ -164,6 +174,14 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                     }}
                 </style>
                 <script>
+                    // Auto-copy device code to clipboard
+                    navigator.clipboard.writeText('{device_code}').then(function() {{
+                        console.log('Device code copied to clipboard');
+                    }}).catch(function(err) {{
+                        console.log('Could not copy device code:', err);
+                    }});
+                    
+                    // Auto-refresh
                     setTimeout(function() {{
                         window.location.reload();
                     }}, 5000);
