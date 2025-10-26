@@ -208,20 +208,75 @@ if credentials_ready:
                     st.rerun()
             authenticated = True
         else:
-            # Login page
-            st.markdown("<br>", unsafe_allow_html=True)
-            col1, col2, col3 = st.columns([1, 1, 1])
+            # Professional login page
+            st.markdown("""
+            <style>
+            .login-container {
+                max-width: 400px;
+                margin: 80px auto;
+                padding: 40px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            }
+            .login-header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .login-title {
+                font-size: 28px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 8px;
+            }
+            .login-subtitle {
+                font-size: 15px;
+                color: #666;
+            }
+            .divider {
+                display: flex;
+                align-items: center;
+                text-align: center;
+                margin: 25px 0;
+            }
+            .divider::before,
+            .divider::after {
+                content: '';
+                flex: 1;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            .divider span {
+                padding: 0 15px;
+                color: #999;
+                font-size: 13px;
+            }
+            .security-note {
+                text-align: center;
+                margin-top: 25px;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #666;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 st.markdown("""
-                <div style='text-align: center; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);'>
-                    <h2 style='color: #0078D4; margin-bottom: 10px;'>📅 Calendar Agent</h2>
-                    <p style='color: #666; margin-bottom: 30px;'>Sign in to manage your calendar with AI</p>
+                <div class="login-container">
+                    <div class="login-header">
+                        <div class="login-title">📅 Calendar Agent</div>
+                        <div class="login-subtitle">AI-powered calendar management</div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("<div style='max-width: 400px; margin: -20px auto 0;'>", unsafe_allow_html=True)
                 
-                if st.button("🔑 Sign in with Microsoft", type="primary", use_container_width=True):
+                # Microsoft OAuth button styled professionally
+                if st.button("🔑 Continue with Microsoft", type="primary", use_container_width=True, key="ms_login"):
                     try:
                         get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"], force_new_login=True)
                         st.rerun()
@@ -229,9 +284,11 @@ if credentials_ready:
                         pass
                 
                 st.markdown("""
-                <div style='text-align: center; margin-top: 20px; color: #666; font-size: 14px;'>
-                    <p>✨ Secure OAuth 2.0 authentication</p>
-                    <p>🔒 Your calendar data stays private</p>
+                <div class="security-note">
+                    🔒 <strong>Secure Authentication</strong><br>
+                    Your credentials are never stored. We use Microsoft's secure OAuth 2.0 protocol.<br>
+                    <small>Your calendar data remains private and encrypted.</small>
+                </div>
                 </div>
                 """, unsafe_allow_html=True)
             
