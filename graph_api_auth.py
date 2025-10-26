@@ -91,21 +91,25 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                 
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
                 
-                st.markdown("""
-                <div style='text-align: center; padding: 30px; background: #f8f9fa; border-radius: 10px; margin: 20px 0;'>
-                    <h3 style='color: #0078D4; margin-bottom: 15px;'>🔐 Sign In Required</h3>
-                    <p style='color: #666; margin-bottom: 20px;'>Click the button below to sign in with your Microsoft account</p>
+                st.markdown(f"""
+                <div style='text-align: center; padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; margin: 20px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.2);'>
+                    <div style='background: white; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px;'>
+                        🔐
+                    </div>
+                    <h2 style='color: white; margin-bottom: 10px; font-weight: 600;'>Secure Sign-In</h2>
+                    <p style='color: rgba(255,255,255,0.9); margin-bottom: 30px; font-size: 16px;'>One click to access your calendar</p>
+                    <a href='{auth_url}' target='_blank' style='text-decoration: none;'>
+                        <button style='background: white; color: #667eea; padding: 15px 40px; border: none; border-radius: 50px; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;' onmouseover='this.style.transform="scale(1.05)"' onmouseout='this.style.transform="scale(1)"'>
+                            🚀 Sign in with Microsoft
+                        </button>
+                    </a>
+                    <p style='color: rgba(255,255,255,0.8); margin-top: 20px; font-size: 14px;'>🔒 Secure OAuth 2.0 Authentication</p>
                 </div>
-                """, unsafe_allow_html=True)
-                
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col2:
-                    st.markdown(f"<a href='{auth_url}' target='_blank'><button style='width: 100%; padding: 12px; background: #0078D4; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;'>🔑 Open Microsoft Sign-In</button></a>", unsafe_allow_html=True)
-                
-                st.markdown("""
-                <div style='text-align: center; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;'>
-                    <p style='color: #856404; margin: 0;'>⚠️ After signing in, return here and send any message to continue</p>
-                </div>
+                <script>
+                    setTimeout(function() {{
+                        window.location.reload();
+                    }}, 10000);
+                </script>
                 """, unsafe_allow_html=True)
                 
                 raise Exception("Please authenticate and try again")
@@ -140,21 +144,30 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                 flow = pending['flow']
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
                 
-                st.markdown("""
-                <div style='text-align: center; padding: 30px; background: #d1ecf1; border-radius: 10px; margin: 20px 0;'>
-                    <h3 style='color: #0c5460; margin-bottom: 15px;'>⏳ Waiting for Sign-In...</h3>
-                    <p style='color: #0c5460; margin-bottom: 20px;'>Complete the sign-in process in the popup window</p>
+                st.markdown(f"""
+                <div style='text-align: center; padding: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; margin: 20px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.2);'>
+                    <div style='background: white; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;'>
+                        <div style='border: 4px solid #f5576c; border-top: 4px solid transparent; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;'></div>
+                    </div>
+                    <h2 style='color: white; margin-bottom: 10px; font-weight: 600;'>Authenticating...</h2>
+                    <p style='color: rgba(255,255,255,0.9); margin-bottom: 30px; font-size: 16px;'>Complete sign-in in the popup window</p>
+                    <a href='{auth_url}' target='_blank' style='text-decoration: none;'>
+                        <button style='background: white; color: #f5576c; padding: 12px 30px; border: none; border-radius: 50px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
+                            🔄 Reopen Sign-In
+                        </button>
+                    </a>
                 </div>
-                """, unsafe_allow_html=True)
-                
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col2:
-                    st.markdown(f"<a href='{auth_url}' target='_blank'><button style='width: 100%; padding: 12px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;'>🔄 Re-open Sign-In Window</button></a>", unsafe_allow_html=True)
-                
-                st.markdown("""
-                <div style='text-align: center; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;'>
-                    <p style='color: #856404; margin: 0;'>⚠️ After signing in, return here and send any message to continue</p>
-                </div>
+                <style>
+                    @keyframes spin {{
+                        0% {{ transform: rotate(0deg); }}
+                        100% {{ transform: rotate(360deg); }}
+                    }}
+                </style>
+                <script>
+                    setTimeout(function() {{
+                        window.location.reload();
+                    }}, 5000);
+                </script>
                 """, unsafe_allow_html=True)
                 
                 error = result.get('error_description', 'Please complete authentication') if result else 'Please complete authentication'
