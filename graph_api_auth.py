@@ -108,6 +108,8 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
         else:
             # Try to complete the pending authentication
             pending = st.session_state.pending_auth
+            import time
+            time.sleep(pending['flow'].get('interval', 5))
             result = pending['app'].acquire_token_by_device_flow(pending['flow'])
             
             if result and "access_token" in result:
