@@ -98,21 +98,46 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                         🔐
                     </div>
                     <h2 style='color: white; margin-bottom: 10px; font-weight: 600;'>Secure Sign-In</h2>
-                    <p style='color: rgba(255,255,255,0.9); margin-bottom: 30px; font-size: 16px;'>One click to access your calendar</p>
+                    <p style='color: rgba(255,255,255,0.9); margin-bottom: 20px; font-size: 16px;'>Your code (auto-copied):</p>
+                    <div style='background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block;'>
+                        <input type='text' id='deviceCode' value='{device_code}' readonly style='background: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 24px; font-weight: bold; letter-spacing: 2px; text-align: center; width: 200px; color: #667eea;' />
+                    </div>
+                    <br/>
                     <a href='{auth_url}' target='_blank' style='text-decoration: none;'>
                         <button style='background: white; color: #667eea; padding: 15px 40px; border: none; border-radius: 50px; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;' onmouseover='this.style.transform="scale(1.05)"' onmouseout='this.style.transform="scale(1)"'>
                             🚀 Sign in with Microsoft
                         </button>
                     </a>
-                    <p style='color: rgba(255,255,255,0.8); margin-top: 20px; font-size: 14px;'>🔒 Secure OAuth 2.0 Authentication</p>
+                    <p style='color: rgba(255,255,255,0.8); margin-top: 20px; font-size: 14px;'>🔒 Code copied to clipboard - just paste it!</p>
                 </div>
                 <script>
-                    // Auto-copy device code to clipboard
-                    navigator.clipboard.writeText('{device_code}').then(function() {{
-                        console.log('Device code copied to clipboard');
-                    }}).catch(function(err) {{
-                        console.log('Could not copy device code:', err);
-                    }});
+                    // Auto-select and copy device code
+                    var codeInput = document.getElementById('deviceCode');
+                    codeInput.select();
+                    codeInput.setSelectionRange(0, 99999);
+                    
+                    // Try clipboard API first
+                    if (navigator.clipboard && navigator.clipboard.writeText) {{
+                        navigator.clipboard.writeText('{device_code}').then(function() {{
+                            console.log('Device code copied via Clipboard API');
+                        }}).catch(function(err) {{
+                            // Fallback to execCommand
+                            try {{
+                                document.execCommand('copy');
+                                console.log('Device code copied via execCommand');
+                            }} catch(e) {{
+                                console.log('Copy failed:', e);
+                            }}
+                        }});
+                    }} else {{
+                        // Fallback for older browsers
+                        try {{
+                            document.execCommand('copy');
+                            console.log('Device code copied via execCommand');
+                        }} catch(e) {{
+                            console.log('Copy failed:', e);
+                        }}
+                    }}
                     
                     // Auto-refresh
                     setTimeout(function() {{
@@ -160,7 +185,11 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                         <div style='border: 4px solid #f5576c; border-top: 4px solid transparent; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;'></div>
                     </div>
                     <h2 style='color: white; margin-bottom: 10px; font-weight: 600;'>Authenticating...</h2>
-                    <p style='color: rgba(255,255,255,0.9); margin-bottom: 30px; font-size: 16px;'>Complete sign-in in the popup window</p>
+                    <p style='color: rgba(255,255,255,0.9); margin-bottom: 15px; font-size: 16px;'>Your code (copied):</p>
+                    <div style='background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block;'>
+                        <input type='text' id='deviceCode' value='{device_code}' readonly style='background: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 24px; font-weight: bold; letter-spacing: 2px; text-align: center; width: 200px; color: #f5576c;' />
+                    </div>
+                    <br/>
                     <a href='{auth_url}' target='_blank' style='text-decoration: none;'>
                         <button style='background: white; color: #f5576c; padding: 12px 30px; border: none; border-radius: 50px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
                             🔄 Reopen Sign-In
@@ -174,12 +203,33 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                     }}
                 </style>
                 <script>
-                    // Auto-copy device code to clipboard
-                    navigator.clipboard.writeText('{device_code}').then(function() {{
-                        console.log('Device code copied to clipboard');
-                    }}).catch(function(err) {{
-                        console.log('Could not copy device code:', err);
-                    }});
+                    // Auto-select and copy device code
+                    var codeInput = document.getElementById('deviceCode');
+                    codeInput.select();
+                    codeInput.setSelectionRange(0, 99999);
+                    
+                    // Try clipboard API first
+                    if (navigator.clipboard && navigator.clipboard.writeText) {{
+                        navigator.clipboard.writeText('{device_code}').then(function() {{
+                            console.log('Device code copied via Clipboard API');
+                        }}).catch(function(err) {{
+                            // Fallback to execCommand
+                            try {{
+                                document.execCommand('copy');
+                                console.log('Device code copied via execCommand');
+                            }} catch(e) {{
+                                console.log('Copy failed:', e);
+                            }}
+                        }});
+                    }} else {{
+                        // Fallback for older browsers
+                        try {{
+                            document.execCommand('copy');
+                            console.log('Device code copied via execCommand');
+                        }} catch(e) {{
+                            console.log('Copy failed:', e);
+                        }}
+                    }}
                     
                     // Auto-refresh
                     setTimeout(function() {{
