@@ -89,17 +89,24 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                 import time
                 st.session_state.pending_auth = {'flow': flow, 'app': app, 'client_id': use_client_id, 'last_attempt': time.time()}
                 
-                st.info("🔐 **Quick Sign-In Required**")
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
-                st.markdown(f"### [👉 Click here to sign in]({auth_url})")
-                st.markdown("---")
-                st.markdown("**Or manually:**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.info(f"Visit: {flow['verification_uri']}")
+                
+                st.markdown("""
+                <div style='text-align: center; padding: 30px; background: #f8f9fa; border-radius: 10px; margin: 20px 0;'>
+                    <h3 style='color: #0078D4; margin-bottom: 15px;'>🔐 Sign In Required</h3>
+                    <p style='color: #666; margin-bottom: 20px;'>Click the button below to sign in with your Microsoft account</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col1, col2, col3 = st.columns([1, 2, 1])
                 with col2:
-                    st.code(f"Code: {flow['user_code']}")
-                st.warning("⚠️ After signing in, send a message to continue")
+                    st.markdown(f"<a href='{auth_url}' target='_blank'><button style='width: 100%; padding: 12px; background: #0078D4; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;'>🔑 Open Microsoft Sign-In</button></a>", unsafe_allow_html=True)
+                
+                st.markdown("""
+                <div style='text-align: center; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;'>
+                    <p style='color: #856404; margin: 0;'>⚠️ After signing in, return here and send any message to continue</p>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 raise Exception("Please authenticate and try again")
             except Exception as e:
@@ -131,17 +138,24 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
             else:
                 # Still pending or failed
                 flow = pending['flow']
-                st.info("🔐 **Waiting for sign-in...**")
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
-                st.markdown(f"### [👉 Click here to sign in]({auth_url})")
-                st.markdown("---")
-                st.markdown("**Or manually:**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.info(f"Visit: {flow['verification_uri']}")
+                
+                st.markdown("""
+                <div style='text-align: center; padding: 30px; background: #d1ecf1; border-radius: 10px; margin: 20px 0;'>
+                    <h3 style='color: #0c5460; margin-bottom: 15px;'>⏳ Waiting for Sign-In...</h3>
+                    <p style='color: #0c5460; margin-bottom: 20px;'>Complete the sign-in process in the popup window</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col1, col2, col3 = st.columns([1, 2, 1])
                 with col2:
-                    st.code(f"Code: {flow['user_code']}")
-                st.warning("⚠️ After signing in, send a message to continue")
+                    st.markdown(f"<a href='{auth_url}' target='_blank'><button style='width: 100%; padding: 12px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;'>🔄 Re-open Sign-In Window</button></a>", unsafe_allow_html=True)
+                
+                st.markdown("""
+                <div style='text-align: center; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;'>
+                    <p style='color: #856404; margin: 0;'>⚠️ After signing in, return here and send any message to continue</p>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 error = result.get('error_description', 'Please complete authentication') if result else 'Please complete authentication'
                 raise Exception(error)
