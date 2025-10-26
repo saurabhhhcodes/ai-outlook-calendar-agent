@@ -86,7 +86,8 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                     st.markdown("- Check API permissions are granted")
                     raise Exception("Device flow not supported. Check Azure app configuration.")
                     
-                st.session_state.pending_auth = {'flow': flow, 'app': app, 'client_id': use_client_id}
+                import time
+                st.session_state.pending_auth = {'flow': flow, 'app': app, 'client_id': use_client_id, 'last_attempt': time.time()}
                 
                 st.info("🔐 **Quick Sign-In Required**")
                 auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
@@ -110,17 +111,14 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
             import time
             pending = st.session_state.pending_auth
             
-            # Check if enough time has passed since last attempt
-            if 'last_attempt' not in pending:
-                pending['last_attempt'] = time.time()
-                st.session_state.pending_auth = pending
-            
-            time_since_last = time.time() - pending['last_attempt']
+            # Respect polling interval
+            time_since_last = time.time() - pending.get('last_attempt', 0)
             interval = pending['flow'].get('interval', 5)
             
             if time_since_last < interval:
                 time.sleep(interval - time_since_last)
             
+            # Update last attempt time
             pending['last_attempt'] = time.time()
             st.session_state.pending_auth = pending
             
