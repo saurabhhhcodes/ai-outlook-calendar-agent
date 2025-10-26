@@ -88,11 +88,17 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
                     
                 st.session_state.pending_auth = {'flow': flow, 'app': app, 'client_id': use_client_id}
                 
-                st.error("🔐 Authentication Required")
-                st.info(f"1. Go to: {flow['verification_uri']}")
-                st.code(f"2. Enter: {flow['user_code']}")
-                st.warning("3. Sign in with YOUR Microsoft account")
-                st.warning("4. After signing in, send your message again")
+                st.info("🔐 **Quick Sign-In Required**")
+                auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
+                st.markdown(f"### [👉 Click here to sign in]({auth_url})")
+                st.markdown("---")
+                st.markdown("**Or manually:**")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.info(f"Visit: {flow['verification_uri']}")
+                with col2:
+                    st.code(f"Code: {flow['user_code']}")
+                st.warning("⚠️ After signing in, send a message to continue")
                 
                 raise Exception("Please authenticate and try again")
             except Exception as e:
@@ -111,10 +117,17 @@ def get_access_token(client_id=None, tenant_id=None, force_new_login=False):
             else:
                 # Still pending or failed
                 flow = pending['flow']
-                st.error("🔐 Authentication Required")
-                st.info(f"1. Go to: {flow['verification_uri']}")
-                st.code(f"2. Enter: {flow['user_code']}")
-                st.warning("3. After signing in, send your message again")
+                st.info("🔐 **Waiting for sign-in...**")
+                auth_url = f"{flow['verification_uri']}?otc={flow['user_code']}"
+                st.markdown(f"### [👉 Click here to sign in]({auth_url})")
+                st.markdown("---")
+                st.markdown("**Or manually:**")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.info(f"Visit: {flow['verification_uri']}")
+                with col2:
+                    st.code(f"Code: {flow['user_code']}")
+                st.warning("⚠️ After signing in, send a message to continue")
                 
                 error = result.get('error_description', 'Please complete authentication') if result else 'Please complete authentication'
                 raise Exception(error)

@@ -209,13 +209,15 @@ if credentials_ready:
             authenticated = True
         else:
             st.info("🔐 **Sign in with your Microsoft account to get started**")
-            st.markdown("Each user signs in with their own account - your calendar stays private!")
-            if st.button("🔑 Sign In with Microsoft", type="primary"):
-                try:
-                    get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"], force_new_login=True)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Authentication error: {str(e)}")
+            st.markdown("✨ Each user signs in with their own account - your calendar stays private!")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("🔑 Sign In with Microsoft", type="primary", use_container_width=True):
+                    try:
+                        get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"], force_new_login=True)
+                        st.rerun()
+                    except Exception:
+                        pass
             authenticated = False
             st.stop()
     except Exception as e:
