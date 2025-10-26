@@ -208,16 +208,33 @@ if credentials_ready:
                     st.rerun()
             authenticated = True
         else:
-            st.info("🔐 **Sign in with your Microsoft account to get started**")
-            st.markdown("✨ Each user signs in with their own account - your calendar stays private!")
-            col1, col2, col3 = st.columns([1, 2, 1])
+            # Login page
+            st.markdown("<br>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([1, 1, 1])
             with col2:
-                if st.button("🔑 Sign In with Microsoft", type="primary", use_container_width=True):
+                st.markdown("""
+                <div style='text-align: center; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);'>
+                    <h2 style='color: #0078D4; margin-bottom: 10px;'>📅 Calendar Agent</h2>
+                    <p style='color: #666; margin-bottom: 30px;'>Sign in to manage your calendar with AI</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if st.button("🔑 Sign in with Microsoft", type="primary", use_container_width=True):
                     try:
                         get_access_token(os.environ["CLIENT_ID"], os.environ["TENANT_ID"], force_new_login=True)
                         st.rerun()
                     except Exception:
                         pass
+                
+                st.markdown("""
+                <div style='text-align: center; margin-top: 20px; color: #666; font-size: 14px;'>
+                    <p>✨ Secure OAuth 2.0 authentication</p>
+                    <p>🔒 Your calendar data stays private</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
             authenticated = False
             st.stop()
     except Exception as e:
